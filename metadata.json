@@ -1,0 +1,5 @@
+{
+  "name": "만화 생성 웹앱",
+  "description": "An AI-powered web application that automates the creation of 4-panel webtoons, from scriptwriting and character design to final image generation and social media content.",
+  "requestFramePermissions": []
+}

@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>4-Cut Comic Generator PRO</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <style>
+      /* From https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Do+Hyeon&family=Gothic+A1:wght@400;700&family=Nanum+Pen+Script&family=Noto+Sans+KR:wght@400;700&display=swap */
+      /* korean */
+      @font-face {
+        font-family: 'Black Han Sans';
+        font-style: normal;
+        font-weight: 400;
+        font-display: swap;
+        src: url(https://fonts.gstatic.com/s/blackhansans/v17/ea8Aad44W2VmAGEX_hNFKGNkoWb_pQ.woff2) format('woff2');
+        unicode-range: U+AC00-D7A3, U+0000-00FF, U+0020-002F, U+003A-0040, U+005B-0060, U+007B-007E;
+      }
+      /* korean */
+      @font-face {
+        font-family: 'Do Hyeon';
+        font-style: normal;
+        font-weight: 400;
+        font-display: swap;
+        src: url(https://fonts.gstatic.com/s/dohyeon/v16/TwMN-I8D1enl_wkgW7_t6g.woff2) format('woff2');
+        unicode-range: U+AC00-D7A3, U+0000-00FF, U+0020-002F, U+003A-0040, U+005B-0060, U+007B-007E;
+      }
+      /* korean */
+      @font-face {
+        font-family: 'Gothic A1';
+        font-style: normal;
+        font-weight: 400;
+        font-display: swap;
+        src: url(https://fonts.gstatic.com/s/gothica1/v13/CSR74z5ZnPydRjlCCwlCCMcq.woff2) format('woff2');
+        unicode-range: U+AC00-D7A3, U+0000-00FF, U+0020-002F, U+003A-0040, U+005B-0060, U+007B-007E;
+      }
+      /* korean */
+      @font-face {
+        font-family: 'Gothic A1';
+        font-style: normal;
+        font-weight: 700;
+        font-display: swap;
+        src: url(https://fonts.gstatic.com/s/gothica1/v13/CSR44z5ZnPydRjlCCwlCpOYy-A.woff2) format('woff2');
+        unicode-range: U+AC00-D7A3, U+0000-00FF, U+0020-002F, U+003A-0040, U+005B-0060, U+007B-007E;
+      }
+      /* korean */
+      @font-face {
+        font-family: 'Nanum Pen Script';
+        font-style: normal;
+        font-weight: 400;
+        font-display: swap;
+        src: url(https://fonts.gstatic.com/s/nanumpenscript/v23/daaLssmHYErLF3gZ_YKAu-F-264_noY.woff2) format('woff2');
+        unicode-range: U+AC00-D7A3, U+0000-00FF, U+0020-002F, U+003A-0040, U+005B-0060, U+007B-007E;
+      }
+      /* korean */
+      @font-face {
+        font-family: 'Noto Sans KR';
+        font-style: normal;
+        font-weight: 400;
+        font-display: swap;
+        src: url(https://fonts.gstatic.com/s/notosanskr/v36/PbykFmztB3oCo4ig6vnlw_E5i_lB.woff2) format('woff2');
+        unicode-range: U+AC00-D7A3, U+0000-00FF, U+0020-002F, U+003A-0040, U+005B-0060, U+007B-007E;
+      }
+      /* korean */
+      @font-face {
+        font-family: 'Noto Sans KR';
+        font-style: normal;
+        font-weight: 700;
+        font-display: swap;
+        src: url(https://fonts.gstatic.com/s/notosanskr/v36/Pby7FmztB3oCo4ig6vnlw_E5q6lB-g.woff2) format('woff2');
+        unicode-range: U+AC00-D7A3, U+0000-00FF, U+0020-002F, U+003A-0040, U+005B-0060, U+007B-007E;
+      }
+    </style>
+    <script>
+      // Prevents flash of incorrect theme
+      (function() {
+        const theme = localStorage.getItem('theme');
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        if (theme === 'dark' || ((theme === 'system' || !theme) && prefersDark)) {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
+      })();
+    </script>
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+      }
+    </script>
+    <script src="https://cdn.tailwindcss.com"></script>
+  <script type="importmap">
+{
+  "imports": {
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.29.0",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "html-to-image": "https://aistudiocdn.com/html-to-image@^1.11.13"
+  }
+}
+</script>
+</head>
+  <body class="bg-white dark:bg-gray-900">
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+  </body>
+</html>
