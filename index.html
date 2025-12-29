@@ -10,106 +10,84 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
     <style>
-      /* From https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Do+Hyeon&family=Gothic+A1:wght@400;700&family=Nanum+Pen+Script&family=Noto+Sans+KR:wght@400;700&display=swap */
-      /* korean */
-      @font-face {
-        font-family: 'Black Han Sans';
-        font-style: normal;
-        font-weight: 400;
-        font-display: swap;
-        src: url(https://fonts.gstatic.com/s/blackhansans/v17/ea8Aad44W2VmAGEX_hNFKGNkoWb_pQ.woff2) format('woff2');
-        unicode-range: U+AC00-D7A3, U+0000-00FF, U+0020-002F, U+003A-0040, U+005B-0060, U+007B-007E;
-      }
-      /* korean */
-      @font-face {
-        font-family: 'Do Hyeon';
-        font-style: normal;
-        font-weight: 400;
-        font-display: swap;
-        src: url(https://fonts.gstatic.com/s/dohyeon/v16/TwMN-I8D1enl_wkgW7_t6g.woff2) format('woff2');
-        unicode-range: U+AC00-D7A3, U+0000-00FF, U+0020-002F, U+003A-0040, U+005B-0060, U+007B-007E;
-      }
-      /* korean */
-      @font-face {
-        font-family: 'Gothic A1';
-        font-style: normal;
-        font-weight: 400;
-        font-display: swap;
-        src: url(https://fonts.gstatic.com/s/gothica1/v13/CSR74z5ZnPydRjlCCwlCCMcq.woff2) format('woff2');
-        unicode-range: U+AC00-D7A3, U+0000-00FF, U+0020-002F, U+003A-0040, U+005B-0060, U+007B-007E;
-      }
-      /* korean */
-      @font-face {
-        font-family: 'Gothic A1';
-        font-style: normal;
-        font-weight: 700;
-        font-display: swap;
-        src: url(https://fonts.gstatic.com/s/gothica1/v13/CSR44z5ZnPydRjlCCwlCpOYy-A.woff2) format('woff2');
-        unicode-range: U+AC00-D7A3, U+0000-00FF, U+0020-002F, U+003A-0040, U+005B-0060, U+007B-007E;
-      }
-      /* korean */
-      @font-face {
-        font-family: 'Nanum Pen Script';
-        font-style: normal;
-        font-weight: 400;
-        font-display: swap;
-        src: url(https://fonts.gstatic.com/s/nanumpenscript/v23/daaLssmHYErLF3gZ_YKAu-F-264_noY.woff2) format('woff2');
-        unicode-range: U+AC00-D7A3, U+0000-00FF, U+0020-002F, U+003A-0040, U+005B-0060, U+007B-007E;
-      }
-      /* korean */
-      @font-face {
-        font-family: 'Noto Sans KR';
-        font-style: normal;
-        font-weight: 400;
-        font-display: swap;
-        src: url(https://fonts.gstatic.com/s/notosanskr/v36/PbykFmztB3oCo4ig6vnlw_E5i_lB.woff2) format('woff2');
-        unicode-range: U+AC00-D7A3, U+0000-00FF, U+0020-002F, U+003A-0040, U+005B-0060, U+007B-007E;
-      }
-      /* korean */
-      @font-face {
-        font-family: 'Noto Sans KR';
-        font-style: normal;
-        font-weight: 700;
-        font-display: swap;
-        src: url(https://fonts.gstatic.com/s/notosanskr/v36/Pby7FmztB3oCo4ig6vnlw_E5q6lB-g.woff2) format('woff2');
-        unicode-range: U+AC00-D7A3, U+0000-00FF, U+0020-002F, U+003A-0040, U+005B-0060, U+007B-007E;
+      /* Font Definitions */
+      @font-face { font-family: 'Black Han Sans'; font-style: normal; font-weight: 400; font-display: swap; src: url(https://fonts.gstatic.com/s/blackhansans/v17/ea8Aad44W2VmAGEX_hNFKGNkoWb_pQ.woff2) format('woff2'); unicode-range: U+AC00-D7A3, U+0000-00FF, U+0020-002F, U+003A-0040, U+005B-0060, U+007B-007E; }
+      @font-face { font-family: 'Do Hyeon'; font-style: normal; font-weight: 400; font-display: swap; src: url(https://fonts.gstatic.com/s/dohyeon/v16/TwMN-I8D1enl_wkgW7_t6g.woff2) format('woff2'); unicode-range: U+AC00-D7A3, U+0000-00FF, U+0020-002F, U+003A-0040, U+005B-0060, U+007B-007E; }
+      @font-face { font-family: 'Gothic A1'; font-style: normal; font-weight: 400; font-display: swap; src: url(https://fonts.gstatic.com/s/gothica1/v13/CSR74z5ZnPydRjlCCwlCCMcq.woff2) format('woff2'); unicode-range: U+AC00-D7A3, U+0000-00FF, U+0020-002F, U+003A-0040, U+005B-0060, U+007B-007E; }
+      @font-face { font-family: 'Gothic A1'; font-style: normal; font-weight: 700; font-display: swap; src: url(https://fonts.gstatic.com/s/gothica1/v13/CSR44z5ZnPydRjlCCwlCpOYy-A.woff2) format('woff2'); unicode-range: U+AC00-D7A3, U+0000-00FF, U+0020-002F, U+003A-0040, U+005B-0060, U+007B-007E; }
+      @font-face { font-family: 'Nanum Pen Script'; font-style: normal; font-weight: 400; font-display: swap; src: url(https://fonts.gstatic.com/s/nanumpenscript/v23/daaLssmHYErLF3gZ_YKAu-F-264_noY.woff2) format('woff2'); unicode-range: U+AC00-D7A3, U+0000-00FF, U+0020-002F, U+003A-0040, U+005B-0060, U+007B-007E; }
+      @font-face { font-family: 'Noto Sans KR'; font-style: normal; font-weight: 400; font-display: swap; src: url(https://fonts.gstatic.com/s/notosanskr/v36/PbykFmztB3oCo4ig6vnlw_E5i_lB.woff2) format('woff2'); unicode-range: U+AC00-D7A3, U+0000-00FF, U+0020-002F, U+003A-0040, U+005B-0060, U+007B-007E; }
+      @font-face { font-family: 'Noto Sans KR'; font-style: normal; font-weight: 700; font-display: swap; src: url(https://fonts.gstatic.com/s/notosanskr/v36/Pby7FmztB3oCo4ig6vnlw_E5q6lB-g.woff2) format('woff2'); unicode-range: U+AC00-D7A3, U+0000-00FF, U+0020-002F, U+003A-0040, U+005B-0060, U+007B-007E; }
+      
+      /* Base Theme Styles (Fallbacks for JS-driven changes) */
+      :root {
+        --bg-primary: #ffffff;
+        --text-primary: #1f2937;
+        color-scheme: light;
       }
       
+      html.dark {
+        --bg-primary: #111827;
+        --text-primary: #f9fafb;
+        color-scheme: dark;
+      }
+
       body {
         font-family: 'Pretendard', sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: var(--bg-primary);
+        color: var(--text-primary);
+        transition: background-color 0.3s ease, color 0.3s ease;
+        min-height: 100vh;
       }
     </style>
-    <script>
-      // Prevents flash of incorrect theme
-      (function() {
-        const theme = localStorage.getItem('theme');
-        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        if (theme === 'dark' || ((theme === 'system' || !theme) && prefersDark)) {
-          document.documentElement.classList.add('dark');
-        } else {
-          document.documentElement.classList.remove('dark');
-        }
-      })();
-    </script>
+    
+    <!-- Tailwind Configuration -->
+    <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
         darkMode: 'class',
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Pretendard', 'sans-serif'],
+            },
+          },
+        },
       }
     </script>
-    <script src="https://cdn.tailwindcss.com"></script>
-  <script type="importmap">
-{
-  "imports": {
-    "react/": "https://aistudiocdn.com/react@^19.2.0/",
-    "react": "https://aistudiocdn.com/react@^19.2.0",
-    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.29.0",
-    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
-    "html-to-image": "https://aistudiocdn.com/html-to-image@^1.11.13"
-  }
-}
-</script>
-</head>
-  <body class="bg-white dark:bg-gray-900">
+    
+    <!-- Inline script to prevent theme flash & establish initial theme -->
+    <script>
+      (function() {
+        try {
+          const stored = localStorage.getItem('theme') || 'system';
+          const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+          const isDark = stored === 'dark' || (stored === 'system' && prefersDark);
+          
+          if (isDark) {
+            document.documentElement.classList.add('dark');
+          } else {
+            document.documentElement.classList.remove('dark');
+          }
+        } catch (e) {}
+      })();
+    </script>
+
+    <script type="importmap">
+    {
+      "imports": {
+        "react/": "https://aistudiocdn.com/react@^19.2.0/",
+        "react": "https://aistudiocdn.com/react@^19.2.0",
+        "@google/genai": "https://aistudiocdn.com/@google/genai@^1.29.0",
+        "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+        "html-to-image": "https://aistudiocdn.com/html-to-image@^1.11.13"
+      }
+    }
+    </script>
+  </head>
+  <body>
     <div id="root"></div>
     <script type="module" src="/index.tsx"></script>
   </body>

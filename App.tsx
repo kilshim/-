@@ -8,7 +8,7 @@ import Step1Topic from './components/wizard/Step1Topic';
 import Step2Script from './components/wizard/Step2Script';
 import Step3Characters from './components/wizard/Step3Characters';
 import Step4Panels from './components/wizard/Step4Panels';
-import { GithubIcon, SparklesIcon, SettingsIcon } from './components/Icons';
+import { SparklesIcon, SettingsIcon } from './components/Icons';
 import ThemeToggle from './components/ui/ThemeToggle';
 import Button from './components/ui/Button';
 import SettingsModal from './components/settings/SettingsModal';
@@ -30,28 +30,49 @@ const App: React.FC = () => {
   const [theme, setTheme] = useState<Theme>(() => {
     if (typeof window !== 'undefined') {
         const storedTheme = localStorage.getItem('theme');
-        if (['light', 'dark', 'system'].includes(storedTheme!)) {
+        if (storedTheme === 'light' || storedTheme === 'dark' || storedTheme === 'system') {
             return storedTheme as Theme;
         }
     }
     return 'system';
   });
 
-  useEffect(() => {
-    const applyTheme = (t: Theme) => {
-        const root = window.document.documentElement;
-        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  // 테마 적용 함수 - DOM을 직접 조작하여 가장 확실하게 변경 사항 반영
+  const applyTheme = useCallback((t: Theme) => {
+    const root = window.document.documentElement;
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const shouldBeDark = t === 'dark' || (t === 'system' && mediaQuery.matches);
+    
+    if (shouldBeDark) {
+      root.classList.add('dark');
+      root.setAttribute('data-theme', 'dark');
+      root.style.colorScheme = 'dark';
+    } else {
+      root.classList.remove('dark');
+      root.setAttribute('data-theme', 'light');
+      root.style.colorScheme = 'light';
+    }
+    
+    localStorage.setItem('theme', t);
+  }, []);
 
-        if (t === 'dark' || (t === 'system' && prefersDark)) {
-            root.classList.add('dark');
-        } else {
-            root.classList.remove('dark');
-        }
+  // 테마 상태가 바뀔 때마다 DOM 업데이트
+  useEffect(() => {
+    applyTheme(theme);
+  }, [theme, applyTheme]);
+
+  // 시스템 테마 변경 감지
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const handleChange = () => {
+      if (localStorage.getItem('theme') === 'system') {
+        applyTheme('system');
+      }
     };
 
-    applyTheme(theme);
-    localStorage.setItem('theme', theme);
-  }, [theme]);
+    mediaQuery.addEventListener('change', handleChange);
+    return () => mediaQuery.removeEventListener('change', handleChange);
+  }, [applyTheme]);
 
   const updateProject = useCallback((updates: Partial<Project>) => {
     setProject(prev => ({ ...prev, ...updates }));
@@ -71,25 +92,27 @@ const App: React.FC = () => {
 
   return (
     <ProjectContext.Provider value={contextValue}>
-      <div className="min-h-screen bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-100 flex flex-col font-sans transition-colors duration-200">
-        <header className="bg-white/80 dark:bg-gray-800/50 backdrop-blur-sm sticky top-0 z-20 transition-all duration-300">
+      <div className="min-h-screen bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-100 flex flex-col font-sans transition-colors duration-300">
+        <header className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-md sticky top-0 z-40 border-b border-gray-100 dark:border-gray-700/50 transition-all duration-300">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-between h-16">
-              <div className="flex items-center space-x-2">
-                <SparklesIcon className="w-8 h-8 text-purple-400" />
+              <div className="flex items-center space-x-2 select-none">
+                <SparklesIcon className="w-8 h-8 text-purple-600 dark:text-purple-400" />
                 <h1 className="text-xl font-bold tracking-tight text-gray-900 dark:text-white">
-                  만화 생성 웹앱 <span className="text-purple-400">PRO</span>
+                  만화 생성 웹앱 <span className="text-purple-600 dark:text-purple-400">PRO</span>
                 </h1>
               </div>
-              <div className="flex items-center space-x-2">
-                <Button variant="ghost" size="icon" onClick={() => setIsSettingsOpen(true)}>
+              <div className="flex items-center space-x-3">
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  onClick={() => setIsSettingsOpen(true)} 
+                  className="text-gray-500 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 transition-colors"
+                  aria-label="Settings"
+                >
                   <SettingsIcon className="w-5 h-5" />
                 </Button>
                 <ThemeToggle theme={theme} setTheme={setTheme} />
-                <div className="w-px h-6 bg-gray-200 dark:bg-gray-700 mx-2"></div>
-                <a href="https://github.com/google/generative-ai-docs" target="_blank" rel="noopener noreferrer" className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
-                  <GithubIcon className="w-6 h-6" />
-                </a>
               </div>
             </div>
           </div>
@@ -98,7 +121,7 @@ const App: React.FC = () => {
         <main className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="max-w-5xl mx-auto">
             <WizardNav />
-            <div className="mt-8 bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 sm:p-8 border border-gray-200 dark:border-gray-700">
+            <div className="mt-8 bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 sm:p-8 border border-gray-200 dark:border-gray-700 transition-all duration-300 overflow-hidden">
               {renderStep()}
             </div>
           </div>
@@ -106,7 +129,12 @@ const App: React.FC = () => {
         
         <footer className="text-center py-8 text-gray-500 dark:text-gray-400 text-sm flex flex-col items-center space-y-2">
           <p>Powered by Google Gemini</p>
-          <a href="https://xn--design-hl6wo12cquiba7767a.com/" target="_blank" rel="noopener noreferrer" className="text-purple-500/80 dark:text-purple-400/80 hover:text-purple-600 dark:hover:text-purple-300 font-medium transition-colors border-b border-transparent hover:border-current">
+          <a 
+            href="https://xn--design-hl6wo12cquiba7767a.com/" 
+            target="_blank" 
+            rel="noopener noreferrer" 
+            className="text-purple-600/80 dark:text-purple-400/80 hover:text-purple-600 dark:hover:text-purple-300 font-medium transition-colors border-b border-transparent hover:border-current"
+          >
             떨림과울림Design.com
           </a>
         </footer>
