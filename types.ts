@@ -37,6 +37,7 @@ export type Overlay = {
     fontFamily: string;
     strokeWidth: number;
     lineHeight: number;
+    borderRadius?: number;
   };
   tail: { x: number; y: number; offset: number; } | null; // Pointer for the speech bubble, coords are % of panel
 };

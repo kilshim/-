@@ -1,8 +1,7 @@
 
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
-import { Project, Panel, Character, Script, AppStep } from './types';
+import { Project, AppStep } from './types';
 import { ProjectContext } from './hooks/useProjectContext';
-import { hasApiKey } from './services/geminiService';
 
 import WizardNav from './components/wizard/WizardNav';
 import Step1Topic from './components/wizard/Step1Topic';
@@ -11,8 +10,8 @@ import Step3Characters from './components/wizard/Step3Characters';
 import Step4Panels from './components/wizard/Step4Panels';
 import { GithubIcon, SparklesIcon, SettingsIcon } from './components/Icons';
 import ThemeToggle from './components/ui/ThemeToggle';
-import SettingsModal from './components/settings/SettingsModal';
 import Button from './components/ui/Button';
+import SettingsModal from './components/settings/SettingsModal';
 
 type Theme = 'light' | 'dark' | 'system';
 
@@ -52,28 +51,7 @@ const App: React.FC = () => {
 
     applyTheme(theme);
     localStorage.setItem('theme', theme);
-
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    const handleChange = () => {
-        if (localStorage.getItem('theme') === 'system') {
-            applyTheme('system');
-        }
-    };
-    
-    mediaQuery.addEventListener('change', handleChange);
-
-    return () => {
-        mediaQuery.removeEventListener('change', handleChange);
-    };
   }, [theme]);
-
-  // Check for API key on mount
-  useEffect(() => {
-    if (!hasApiKey()) {
-        const timer = setTimeout(() => setIsSettingsOpen(true), 500);
-        return () => clearTimeout(timer);
-    }
-  }, []);
 
   const updateProject = useCallback((updates: Partial<Project>) => {
     setProject(prev => ({ ...prev, ...updates }));
@@ -83,23 +61,18 @@ const App: React.FC = () => {
 
   const renderStep = () => {
     switch (step) {
-      case AppStep.TOPIC:
-        return <Step1Topic />;
-      case AppStep.SCRIPT:
-        return <Step2Script />;
-      case AppStep.CHARACTERS:
-        return <Step3Characters />;
-      case AppStep.PANELS:
-        return <Step4Panels />;
-      default:
-        return <Step1Topic />;
+      case AppStep.TOPIC: return <Step1Topic />;
+      case AppStep.SCRIPT: return <Step2Script />;
+      case AppStep.CHARACTERS: return <Step3Characters />;
+      case AppStep.PANELS: return <Step4Panels />;
+      default: return <Step1Topic />;
     }
   };
 
   return (
     <ProjectContext.Provider value={contextValue}>
       <div className="min-h-screen bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-100 flex flex-col font-sans transition-colors duration-200">
-        <header className="bg-white/80 dark:bg-gray-800/50 backdrop-blur-sm border-b border-gray-200 dark:border-gray-700 sticky top-0 z-20">
+        <header className="bg-white/80 dark:bg-gray-800/50 backdrop-blur-sm sticky top-0 z-20 transition-all duration-300">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-between h-16">
               <div className="flex items-center space-x-2">
@@ -109,24 +82,12 @@ const App: React.FC = () => {
                 </h1>
               </div>
               <div className="flex items-center space-x-2">
-                <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setIsSettingsOpen(true)}
-                    className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
-                    aria-label="Settings"
-                >
-                    <SettingsIcon className="w-5 h-5" />
+                <Button variant="ghost" size="icon" onClick={() => setIsSettingsOpen(true)}>
+                  <SettingsIcon className="w-5 h-5" />
                 </Button>
                 <ThemeToggle theme={theme} setTheme={setTheme} />
                 <div className="w-px h-6 bg-gray-200 dark:bg-gray-700 mx-2"></div>
-                <a
-                  href="https://github.com/google/generative-ai-docs"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
-                  aria-label="GitHub Repository"
-                >
+                <a href="https://github.com/google/generative-ai-docs" target="_blank" rel="noopener noreferrer" className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
                   <GithubIcon className="w-6 h-6" />
                 </a>
               </div>
@@ -143,8 +104,11 @@ const App: React.FC = () => {
           </div>
         </main>
         
-        <footer className="text-center py-4 text-gray-500 dark:text-gray-400 text-sm">
+        <footer className="text-center py-8 text-gray-500 dark:text-gray-400 text-sm flex flex-col items-center space-y-2">
           <p>Powered by Google Gemini</p>
+          <a href="https://xn--design-hl6wo12cquiba7767a.com/" target="_blank" rel="noopener noreferrer" className="text-purple-500/80 dark:text-purple-400/80 hover:text-purple-600 dark:hover:text-purple-300 font-medium transition-colors border-b border-transparent hover:border-current">
+            떨림과울림Design.com
+          </a>
         </footer>
 
         <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />

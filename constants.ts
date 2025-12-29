@@ -31,6 +31,7 @@ export const OVERLAY_DESIGNS = [
 ];
 
 export const GOOGLE_FONTS = [
+    { name: 'Pretendard', family: "Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif" },
     { name: 'Noto Sans KR', family: "'Noto Sans KR', sans-serif" },
     { name: 'Do Hyeon', family: "'Do Hyeon', sans-serif" },
     { name: 'Black Han Sans', family: "'Black Han Sans', sans-serif" },

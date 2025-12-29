@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useProjectContext } from '../../hooks/useProjectContext';
 import { AppStep, Panel as PanelType, Dialogue, Overlay } from '../../types';
@@ -54,22 +55,34 @@ const InteractivePanel: React.FC<{
         aspectRatio: panel.aspectRatio?.replace(':', ' / ') || '1 / 1',
     };
 
+    const handlePanelClick = (e: React.MouseEvent) => {
+        if (!isInteractive) return;
+        // 패널 배경이나 이미지 클릭 시에만 선택 해제
+        if (e.target === e.currentTarget || (e.target as HTMLElement).tagName === 'IMG') {
+            setSelectedOverlayId(null);
+        }
+    };
+
     return (
         <div
             ref={panelRef}
             style={aspectRatioStyle}
-            className="w-full bg-gray-100 dark:bg-gray-800 rounded-lg overflow-hidden relative border-2 border-gray-300 dark:border-gray-700 group"
-            onClick={isInteractive ? () => setSelectedOverlayId(null) : undefined} // Deselect on panel click
+            className={`w-full overflow-hidden relative group cursor-default ${
+                isInteractive 
+                ? 'bg-gray-100 dark:bg-gray-800 rounded-lg border-2 border-gray-300 dark:border-gray-700' 
+                : 'bg-black' // 최종 결과물에서는 배경을 검정으로 하여 풀블리드 느낌 강화
+            }`}
+            onClick={handlePanelClick}
         >
             {panel.isGenerating && <div className="w-full h-full flex items-center justify-center animate-pulse text-gray-400 dark:text-gray-500">컷 생성중...</div>}
             {panel.imageUrl && !panel.isGenerating && (
-                <img src={panel.imageUrl} alt={`Panel ${panel.idx}`} className="w-full h-full object-cover" />
+                <img src={panel.imageUrl} alt={`Panel ${panel.idx}`} className="w-full h-full object-cover block" />
             )}
              {!panel.imageUrl && !panel.isGenerating && (
                 <div className="w-full h-full flex items-center justify-center text-gray-400 dark:text-gray-500">이미지를 생성해주세요.</div>
             )}
 
-            <div className="absolute top-2 left-2 bg-black/50 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center select-none">{panel.idx}</div>
+            {isInteractive && <div className="absolute top-2 left-2 bg-black/50 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center select-none pointer-events-none">{panel.idx}</div>}
             
             {panel.overlays.map(overlay => (
                 <SpeechBubble
@@ -146,6 +159,7 @@ const Step4Panels: React.FC = () => {
                             fontFamily: GOOGLE_FONTS[0].family,
                             strokeWidth: 2.5,
                             lineHeight: 1.4,
+                            borderRadius: 12,
                         },
                         tail: {
                             x: x + (w / 2),
@@ -261,6 +275,7 @@ const Step4Panels: React.FC = () => {
                             fontFamily: GOOGLE_FONTS[0].family,
                             strokeWidth: 2.5,
                             lineHeight: 1.4,
+                            borderRadius: 12,
                         },
                         tail: { x: 50, y: 65, offset: 0 },
                     };
@@ -304,7 +319,7 @@ const Step4Panels: React.FC = () => {
         htmlToImage.toPng(comicContainerRef.current, { 
             cacheBust: true, 
             pixelRatio: 2,
-            backgroundColor: isDarkMode ? '#1f2937' : '#ffffff', // gray-800 or white
+            backgroundColor: isDarkMode ? '#1f2937' : '#ffffff',
         })
           .then((dataUrl) => {
             const link = document.createElement('a');
@@ -404,6 +419,18 @@ const Step4Panels: React.FC = () => {
                                 </button>
                             ))}
                           </div>
+                        </div>
+                        <div className="flex items-center gap-x-2">
+                            <label htmlFor="border-radius" className="text-sm font-semibold text-gray-800 dark:text-gray-200">곡률:</label>
+                            <input
+                                type="range"
+                                id="border-radius"
+                                min="0"
+                                max="40"
+                                value={selectedOverlay.style.borderRadius ?? 12}
+                                onChange={(e) => handleOverlayStyleChange('borderRadius', parseInt(e.target.value, 10))}
+                                className="w-24 accent-purple-600"
+                            />
                         </div>
                         <div className="border-l border-gray-300 dark:border-gray-600 h-6"></div>
                          <div className="flex items-center gap-x-2">
@@ -581,8 +608,8 @@ const Step4Panels: React.FC = () => {
                         이미지로 다운로드
                     </Button>
                 </div>
-                <div ref={comicContainerRef} className="bg-white dark:bg-gray-800 p-4">
-                    <div className={project.format === '4-cut' ? "grid grid-cols-2 gap-4" : "flex flex-col gap-4"}>
+                <div ref={comicContainerRef} className="bg-black">
+                    <div className={project.format === '4-cut' ? "grid grid-cols-2 gap-0" : "flex flex-col gap-0"}>
                         {project.script?.panels.sort((a,b) => a.idx - b.idx).map(panel => (
                              <InteractivePanel
                                 key={`final-${panel.idx}`}

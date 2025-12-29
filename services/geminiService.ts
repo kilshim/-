@@ -1,46 +1,27 @@
 
-import { GoogleGenAI, Type, Modality } from "@google/genai";
+import { GoogleGenAI, Type } from "@google/genai";
 import { Script, Panel } from '../types';
 import { STYLE_PRESETS } from '../constants';
 
-const STORAGE_KEY = 'GEMINI_API_KEY_ENC';
-
-// Helper to "encrypt" (obfuscate) the key before storing
-const encryptKey = (key: string): string => {
-  try {
-    return btoa(key);
-  } catch (e) {
-    return key;
-  }
-};
-
-// Helper to "decrypt"
-const decryptKey = (key: string): string => {
-  try {
-    return atob(key);
-  } catch (e) {
-    return key;
-  }
-};
+const SESSION_STORAGE_KEY = 'CUSTOM_GEMINI_API_KEY';
 
 export const hasApiKey = (): boolean => {
-    return !!localStorage.getItem(STORAGE_KEY);
+    return !!sessionStorage.getItem(SESSION_STORAGE_KEY) || !!process.env.API_KEY;
 };
 
 export const saveApiKey = (key: string) => {
-    localStorage.setItem(STORAGE_KEY, encryptKey(key));
+    sessionStorage.setItem(SESSION_STORAGE_KEY, key);
 };
 
 export const removeApiKey = () => {
-    localStorage.removeItem(STORAGE_KEY);
+    sessionStorage.removeItem(SESSION_STORAGE_KEY);
 };
 
 export const validateApiKey = async (key: string): Promise<boolean> => {
     try {
         const ai = new GoogleGenAI({ apiKey: key });
-        // Make a lightweight call to test the key
         await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
+            model: 'gemini-3-flash-preview',
             contents: 'test',
         });
         return true;
@@ -51,12 +32,12 @@ export const validateApiKey = async (key: string): Promise<boolean> => {
 }
 
 const getClient = () => {
-    const encryptedKey = localStorage.getItem(STORAGE_KEY);
-    if (!encryptedKey) {
-        throw new Error("API Key not found. Please set your Gemini API Key in settings.");
+    // sessionStorage에 저장된 키가 있으면 우선 사용, 없으면 환경변수 사용
+    const key = sessionStorage.getItem(SESSION_STORAGE_KEY) || process.env.API_KEY;
+    if (!key) {
+        throw new Error("API Key가 설정되지 않았습니다.");
     }
-    const apiKey = decryptKey(encryptedKey);
-    return new GoogleGenAI({ apiKey });
+    return new GoogleGenAI({ apiKey: key });
 };
 
 const scriptSchema = {
@@ -107,7 +88,7 @@ export const generateIdeas = async (genre: string): Promise<string[]> => {
   try {
     const ai = getClient();
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-3-flash-preview',
       contents: `4컷 만화에 사용할 ${genre} 장르의 참신하고 재미있는 주제 5개를 제안해줘. 일상적인 공감대나 예상치 못한 반전이 있는 아이디어가 좋아. 한국어로, JSON 형식으로만 응답해줘. 예: {"ideas": ["주제1", "주제2", ...]}.`,
     });
     const jsonString = response.text.replace(/```json|```/g, '').trim();
@@ -115,9 +96,6 @@ export const generateIdeas = async (genre: string): Promise<string[]> => {
     return result.ideas;
   } catch (error) {
     console.error("Error generating ideas:", error);
-    // Propagate error if it's an API key issue so the UI can handle it
-    if (error instanceof Error && error.message.includes("API Key")) throw error;
-    
     return ["AI-powered toothbrush goes on strike", "A cat discovers its owner is a famous cat-meme influencer", "Two pigeons argue about the best spot to find french fries", "A houseplant plots world domination", "A ghost who is afraid of the dark"];
   }
 };
@@ -126,7 +104,7 @@ export const generateScript = async (topic: string, genre: string, style: string
   try {
     const ai = getClient();
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-pro',
+      model: 'gemini-3-pro-preview',
       contents: `주제: "${topic}", 장르: ${genre}, 스타일: ${style}를 바탕으로 4컷 만화 대본을 생성해줘. 컷 1은 도입, 컷 4는 반전이나 여운이 있어야 해. 대사는 컷당 1~2개를 넘지 않게 간결하게 작성해줘.`,
       config: {
         responseMimeType: "application/json",
@@ -137,8 +115,6 @@ export const generateScript = async (topic: string, genre: string, style: string
     return JSON.parse(jsonString) as Script;
   } catch (error) {
     console.error("Error generating script:", error);
-    if (error instanceof Error && error.message.includes("API Key")) throw error;
-
     return {
       characters: [{ name: "지혜", summary: "평범한 직장인", visual: "단발머리, 오피스룩" }, { name: "냥이", summary: "지혜의 반려묘", visual: "치즈태비 고양이" }],
       panels: [
@@ -156,41 +132,28 @@ export const generateCharacterImage = async (visual: string, style: string): Pro
     try {
         const ai = getClient();
         const stylePreset = STYLE_PRESETS.find(s => s.id === style)?.name || style;
-        const prompt = `4컷 만화 캐릭터 시트 생성.
-- 캐릭터 설명: ${visual}
-- 스타일: ${stylePreset}
-- 요구사항: 정면, 상반신, 중립적인 표정, 단색 배경. 그림에 어떤 글자도 포함하지 말 것.`;
+        const prompt = `4컷 만화 캐릭터 시트 생성. 캐릭터 설명: ${visual}, 스타일: ${stylePreset}. 정면, 상반신, 중립적인 표정, 단색 배경. 글자 포함 금지.`;
 
         const response = await ai.models.generateContent({
             model: 'gemini-2.5-flash-image',
-            contents: {
-                parts: [{ text: prompt }],
-            },
-            config: {
-                responseModalities: [Modality.IMAGE],
-            },
+            contents: { parts: [{ text: prompt }] },
         });
         
         for (const part of response.candidates[0].content.parts) {
             if (part.inlineData) {
-                const base64ImageBytes: string = part.inlineData.data;
-                return `data:image/png;base64,${base64ImageBytes}`;
+                return `data:image/png;base64,${part.inlineData.data}`;
             }
         }
-        throw new Error("No image data found in response");
+        throw new Error("이미지 데이터가 없습니다.");
     } catch (error) {
         console.error("Error generating character image:", error);
-        if (error instanceof Error && error.message.includes("API Key")) throw error;
         return `https://picsum.photos/seed/${encodeURIComponent(visual)}/512/512`;
     }
 };
 
 const dataUrlToGeminiPart = (dataUrl: string) => {
     const match = dataUrl.match(/^data:(image\/\w+);base64,(.*)$/);
-    if (!match) {
-        console.error("Invalid data URL:", dataUrl.substring(0, 30) + "...");
-        throw new Error("Invalid data URL");
-    }
+    if (!match) throw new Error("Invalid data URL");
     return {
         inlineData: {
             mimeType: match[1],
@@ -198,7 +161,6 @@ const dataUrlToGeminiPart = (dataUrl: string) => {
         },
     };
 };
-
 
 export const generatePanelImage = async (
     panel: Omit<Panel, 'imageUrl' | 'isGenerating' | 'overlays'>,
@@ -208,94 +170,47 @@ export const generatePanelImage = async (
     try {
         const ai = getClient();
         const stylePresetPrompt = STYLE_PRESETS.find(s => s.id === style)?.prompt || 'A clean comic art style.';
-        
-        const parts: any[] = [];
+        const parts: any[] = [{ text: `만화 스타일: ${stylePresetPrompt}` }];
 
-        // 1. Initial instruction
-        const initialPrompt = `**GOAL**: Create a single, high-quality comic book panel.
-
-**CRITICAL STYLE INSTRUCTIONS**:
-- The art style is: **${stylePresetPrompt}**.
-- Every element in the image must strictly adhere to this style.
-
-**CHARACTER REFERENCE INSTRUCTIONS**:
-- You will be given reference images for the characters appearing in this panel.
-- The characters you draw MUST look exactly like their provided reference images. Maintain their specific facial features, hair, and clothing.
-- Pay close attention to which character is which.
-`;
-        parts.push({ text: initialPrompt });
-
-        // 2. Add character references
         const relevantCharacters = characterReferences.filter(c => 
-            panel.action.includes(c.name) || 
-            panel.scene.includes(c.name) || 
-            panel.dialogue.some(d => d.by === c.name)
+            panel.action.includes(c.name) || panel.scene.includes(c.name) || panel.dialogue.some(d => d.by === c.name)
         );
 
-        if (relevantCharacters.length > 0) {
-            for (const charRef of relevantCharacters) {
-                parts.push({text: `This is the reference for the character named **${charRef.name}**.`});
-                parts.push(dataUrlToGeminiPart(charRef.image));
-            }
-        }
+        relevantCharacters.forEach(charRef => {
+            parts.push({ text: `캐릭터 '${charRef.name}' 참고용 이미지:` });
+            parts.push(dataUrlToGeminiPart(charRef.image));
+        });
 
-        // 3. Add final panel generation instructions
-        const finalPrompt = `
-**PANEL CONTENT TO GENERATE**:
-Now, using the style and character references above, create the image for this panel:
-- **Aspect Ratio**: Strictly ${panel.aspectRatio || '1:1'}.
-- **Scene & Background**: ${panel.scene}
-- **Characters & Actions**: ${panel.action}
-- **Mood & Details**: ${panel.notes}
-
-**FINAL RULES**:
-- **DO NOT** include any text, speech bubbles, or panel borders in the image.
-- The output should ONLY be the artwork for this single panel.
-- **CRITICAL COMPOSITION RULE**: The main subjects MUST be fully visible. Leave a consistent margin around all sides of the subjects so they are never cropped by the panel edges. The composition must feel balanced and not overly cramped.
-`;
-        parts.push({ text: finalPrompt });
+        parts.push({ text: `생성할 내용: ${panel.scene}, ${panel.action}, 비율: ${panel.aspectRatio || '1:1'}. 텍스트나 테두리 없이 꽉 찬 풀-블리드 이미지로 그려줘.` });
 
         const response = await ai.models.generateContent({
             model: 'gemini-2.5-flash-image',
             contents: { parts },
-            config: {
-                responseModalities: [Modality.IMAGE],
-            },
         });
 
         for (const part of response.candidates[0].content.parts) {
             if (part.inlineData) {
-                const base64ImageBytes: string = part.inlineData.data;
-                return `data:image/png;base64,${base64ImageBytes}`;
+                return `data:image/png;base64,${part.inlineData.data}`;
             }
         }
-        throw new Error("No image data found in response");
-
+        throw new Error("이미지 데이터가 없습니다.");
     } catch (error) {
         console.error("Error generating panel image:", error);
-        if (error instanceof Error && error.message.includes("API Key")) throw error;
-        const seed = encodeURIComponent(`${panel.scene.slice(0, 10)}-${panel.action.slice(0, 10)}`);
-        return `https://picsum.photos/seed/${seed}/512/512`;
+        return `https://picsum.photos/seed/panel-${panel.idx}/512/512`;
     }
 };
-
 
 export const generateInstagramPost = async (topic: string, tone: string): Promise<{ caption: string, hashtags: string }> => {
     try {
         const ai = getClient();
         const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: `4컷 만화의 주제 "${topic}"와 톤 "${tone}"을 바탕으로 인스타그램 포스트를 작성해줘. 본문은 125자 내외로, 이모지를 2-4개 사용하고, 해시태그는 #웹툰 #4컷만화 등을 포함하여 10-15개 정도 생성해줘. 한국어로, JSON 형식으로만 응답해줘. 예: {"caption": "...", "hashtags": "#태그1 #태그2 ..."}.`,
+            model: 'gemini-3-flash-preview',
+            contents: `주제 "${topic}", 톤 "${tone}" 기반 인스타그램 포스트 생성. JSON 형식 응답: {"caption": "...", "hashtags": "..."}.`,
         });
         const jsonString = response.text.replace(/```json|```/g, '').trim();
-        const result = JSON.parse(jsonString);
-        return result;
+        return JSON.parse(jsonString);
     } catch (error) {
         console.error("Error generating Instagram post:", error);
-        if (error instanceof Error && error.message.includes("API Key")) throw error;
-        return {
-            caption: "오늘의 4컷 만화! 🤣 평범한 일상 속 소소한 반전을 담아봤어요. 여러분의 하루에도 즐거운 일이 가득하길 바라요! ✨",
-            hashtags: "#웹툰 #인스타툰 #4컷만화 #일상툰 #개그툰 #만화스타그램 #그림일기 #코믹 #반전 #AI만화 #오늘의유머"
-        };
+        return { caption: "오늘의 만화!", hashtags: "#웹툰 #만화" };
     }
 };
