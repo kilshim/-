@@ -88,7 +88,7 @@ export const generateIdeas = async (genre: string): Promise<string[]> => {
   try {
     const ai = getClient();
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
+      model: 'gemini-3-pro-preview',
       contents: `4컷 만화에 사용할 ${genre} 장르의 참신하고 재미있는 주제 5개를 제안해줘. 일상적인 공감대나 예상치 못한 반전이 있는 아이디어가 좋아. 한국어로, JSON 형식으로만 응답해줘. 예: {"ideas": ["주제1", "주제2", ...]}.`,
     });
     const jsonString = response.text.replace(/```json|```/g, '').trim();
@@ -135,8 +135,14 @@ export const generateCharacterImage = async (visual: string, style: string): Pro
         const prompt = `4컷 만화 캐릭터 시트 생성. 캐릭터 설명: ${visual}, 스타일: ${stylePreset}. 정면, 상반신, 중립적인 표정, 단색 배경. 글자 포함 금지.`;
 
         const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash-image',
+            model: 'gemini-3-pro-image-preview',
             contents: { parts: [{ text: prompt }] },
+            config: {
+                imageConfig: {
+                    aspectRatio: "1:1",
+                    imageSize: "1K"
+                }
+            }
         });
         
         for (const part of response.candidates[0].content.parts) {
@@ -181,11 +187,17 @@ export const generatePanelImage = async (
             parts.push(dataUrlToGeminiPart(charRef.image));
         });
 
-        parts.push({ text: `생성할 내용: ${panel.scene}, ${panel.action}, 비율: ${panel.aspectRatio || '1:1'}. 텍스트나 테두리 없이 꽉 찬 풀-블리드 이미지로 그려줘.` });
+        parts.push({ text: `생성할 내용: ${panel.scene}, ${panel.action}. 텍스트나 테두리 없이 꽉 찬 풀-블리드 이미지로 그려줘.` });
 
         const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash-image',
+            model: 'gemini-3-pro-image-preview',
             contents: { parts },
+            config: {
+                imageConfig: {
+                    aspectRatio: panel.aspectRatio || "1:1",
+                    imageSize: "1K"
+                }
+            }
         });
 
         for (const part of response.candidates[0].content.parts) {
@@ -204,7 +216,7 @@ export const generateInstagramPost = async (topic: string, tone: string): Promis
     try {
         const ai = getClient();
         const response = await ai.models.generateContent({
-            model: 'gemini-3-flash-preview',
+            model: 'gemini-3-pro-preview',
             contents: `주제 "${topic}", 톤 "${tone}" 기반 인스타그램 포스트 생성. JSON 형식 응답: {"caption": "...", "hashtags": "..."}.`,
         });
         const jsonString = response.text.replace(/```json|```/g, '').trim();
