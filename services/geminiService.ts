@@ -89,14 +89,21 @@ export const generateIdeas = async (genre: string): Promise<string[]> => {
     const ai = getClient();
     const response = await ai.models.generateContent({
       model: 'gemini-3-pro-preview',
-      contents: `4컷 만화에 사용할 ${genre} 장르의 참신하고 재미있는 주제 5개를 제안해줘. 일상적인 공감대나 예상치 못한 반전이 있는 아이디어가 좋아. 한국어로, JSON 형식으로만 응답해줘. 예: {"ideas": ["주제1", "주제2", ...]}.`,
+      contents: `4컷 만화에 사용할 ${genre} 장르의 참신하고 재미있는 주제 5개를 제안해줘. 일상적인 공감대나 예상치 못한 반전이 있는 아이디어가 좋아. **반드시 모든 내용은 한국어로 작성해줘.** JSON 형식으로만 응답해줘. 예: {"ideas": ["주제1", "주제2", ...]}.`,
     });
     const jsonString = response.text.replace(/```json|```/g, '').trim();
     const result = JSON.parse(jsonString);
     return result.ideas;
   } catch (error) {
     console.error("Error generating ideas:", error);
-    return ["AI-powered toothbrush goes on strike", "A cat discovers its owner is a famous cat-meme influencer", "Two pigeons argue about the best spot to find french fries", "A houseplant plots world domination", "A ghost who is afraid of the dark"];
+    // Fallback ideas in Korean (API 오류 시 한국어로 출력)
+    return [
+        "파업을 선언한 최첨단 AI 칫솔",
+        "알고 보니 내 고양이가 SNS 스타였다",
+        "감자튀김 하나를 두고 벌이는 비둘기들의 결투",
+        "세계 정복을 꿈꾸는 베란다의 선인장",
+        "겁쟁이 유령의 험난한 폐가 적응기"
+    ];
   }
 };
 
@@ -105,7 +112,7 @@ export const generateScript = async (topic: string, genre: string, style: string
     const ai = getClient();
     const response = await ai.models.generateContent({
       model: 'gemini-3-pro-preview',
-      contents: `주제: "${topic}", 장르: ${genre}, 스타일: ${style}를 바탕으로 4컷 만화 대본을 생성해줘. 컷 1은 도입, 컷 4는 반전이나 여운이 있어야 해. 대사는 컷당 1~2개를 넘지 않게 간결하게 작성해줘.`,
+      contents: `주제: "${topic}", 장르: ${genre}, 스타일: ${style}를 바탕으로 4컷 만화 대본을 생성해줘. 컷 1은 도입, 컷 4는 반전이나 여운이 있어야 해. 대사는 컷당 1~2개를 넘지 않게 간결하게 작성해줘. **모든 내용은 한국어로 작성해야 해.**`,
       config: {
         responseMimeType: "application/json",
         responseSchema: scriptSchema,
@@ -217,7 +224,7 @@ export const generateInstagramPost = async (topic: string, tone: string): Promis
         const ai = getClient();
         const response = await ai.models.generateContent({
             model: 'gemini-3-pro-preview',
-            contents: `주제 "${topic}", 톤 "${tone}" 기반 인스타그램 포스트 생성. JSON 형식 응답: {"caption": "...", "hashtags": "..."}.`,
+            contents: `주제 "${topic}", 톤 "${tone}" 기반 인스타그램 포스트 생성. **반드시 한국어로 작성해줘.** JSON 형식 응답: {"caption": "...", "hashtags": "..."}.`,
         });
         const jsonString = response.text.replace(/```json|```/g, '').trim();
         return JSON.parse(jsonString);
