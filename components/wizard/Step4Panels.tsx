@@ -140,11 +140,23 @@ const Step4Panels: React.FC = () => {
             const newPanels = p.script.panels.map(panel => {
                 if (panel.dialogue.length > 0 && panel.overlays.length === 0) {
                     needsUpdate = true;
-                    const newOverlays = panel.dialogue.map((d, i): Overlay => {
+                    
+                    // Group consecutive dialogues by the same speaker
+                    const groupedDialogues: { by: string; text: string }[] = [];
+                    panel.dialogue.forEach(d => {
+                        const last = groupedDialogues[groupedDialogues.length - 1];
+                        if (last && last.by === d.by) {
+                            last.text += `\n${d.text}`;
+                        } else {
+                            groupedDialogues.push({ by: d.by, text: d.text });
+                        }
+                    });
+
+                    const newOverlays = groupedDialogues.map((d, i): Overlay => {
                       const x = 15 + (i * 5);
-                      const y = 10 + (i * 25);
+                      const y = 10 + (i * 20);
                       const w = 70;
-                      const h = 30;
+                      const h = 25; // S slightly smaller initial height
                       return {
                         id: `overlay-${panel.idx}-${i}-${Date.now()}`,
                         panelId: panel.idx,
@@ -163,7 +175,7 @@ const Step4Panels: React.FC = () => {
                         },
                         tail: {
                             x: x + (w / 2),
-                            y: y + h + 15,
+                            y: y + h + 10,
                             offset: 0,
                         }
                       }
@@ -222,12 +234,10 @@ const Step4Panels: React.FC = () => {
             if (panel.idx === panelIdx) {
                 const newDialogues = [...panel.dialogue];
                 newDialogues[dialogueIndex] = { ...newDialogues[dialogueIndex], text: value };
-
-                const newOverlays = [...panel.overlays];
-                if (newOverlays[dialogueIndex]) {
-                    newOverlays[dialogueIndex] = { ...newOverlays[dialogueIndex], text: value };
-                }
-                return { ...panel, dialogue: newDialogues, overlays: newOverlays };
+                // Note: We do NOT automatically update overlays here anymore. 
+                // Because overlays might be merged, a 1:1 index mapping is no longer valid.
+                // Users should edit the text directly on the visual overlay.
+                return { ...panel, dialogue: newDialogues };
             }
             return panel;
         });
@@ -253,6 +263,7 @@ const Step4Panels: React.FC = () => {
         } catch (error) {
             console.error(`Failed to generate image for panel ${panel.idx}:`, error);
             handlePanelUpdate(panel.idx, { isGenerating: false });
+            alert("이미지 생성에 실패했습니다. API 키를 확인하거나 잠시 후 다시 시도해주세요.");
         }
     }, [project.script, project.style, handlePanelUpdate]);
 
@@ -395,7 +406,7 @@ const Step4Panels: React.FC = () => {
     return (
         <div className="space-y-6">
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white">4. 만화 생성 및 편집</h2>
-            <p className="text-gray-600 dark:text-gray-400">각 컷의 내용을 수정하고 이미지를 생성하세요. 생성된 이미지 위에 말풍선을 추가하고 편집할 수 있습니다.</p>
+            <p className="text-gray-600 dark:text-gray-400">각 컷의 내용을 수정하고 이미지를 생성하세요. 같은 캐릭터의 연속된 대사는 하나의 말풍선으로 합쳐졌습니다.</p>
             
             {selectedOverlay && (
                 <div className="sticky top-[76px] z-30 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200 dark:border-gray-700 rounded-xl p-3 shadow-lg">
@@ -524,13 +535,14 @@ const Step4Panels: React.FC = () => {
                                     <textarea value={panel.action} onChange={e => handlePanelChange(panel.idx, 'action', e.target.value)} rows={2} className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-md mt-1 text-sm resize-none"/>
                                 </div>
                                 <div>
-                                    <label className="text-sm font-medium text-gray-500 dark:text-gray-400">대사</label>
+                                    <label className="text-sm font-medium text-gray-500 dark:text-gray-400">대사 (스크립트 확인용)</label>
                                     {panel.dialogue.map((d, dIndex) => (
-                                    <div key={dIndex} className="flex items-center gap-2 mt-1">
+                                    <div key={dIndex} className="flex items-center gap-2 mt-1 opacity-70">
                                         <span className="font-semibold text-purple-400 dark:text-purple-300 w-16 text-right text-sm">{d.by}:</span>
                                         <input value={d.text} onChange={e => handleDialogueChange(panel.idx, dIndex, e.target.value)} className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-md text-sm"/>
                                     </div>
                                     ))}
+                                    <p className="text-xs text-gray-400 mt-1">* 위 대사는 참고용입니다. 실제 말풍선은 오른쪽 이미지에서 직접 수정하세요.</p>
                                 </div>
                                 <div>
                                     <label htmlFor={`aspect-ratio-${panel.idx}`} className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">이미지 비율</label>

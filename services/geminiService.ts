@@ -5,6 +5,14 @@ import { STYLE_PRESETS } from '../constants';
 
 const SESSION_STORAGE_KEY = 'CUSTOM_GEMINI_API_KEY';
 
+// Safety settings to prevent image generation blocking on standard comic content
+const SAFETY_SETTINGS = [
+    { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_ONLY_HIGH' },
+    { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_ONLY_HIGH' },
+    { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_ONLY_HIGH' },
+    { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_ONLY_HIGH' }
+];
+
 // API 오류 시 사용할 대기 아이디어 풀 (API 호출 실패 시에도 사용자가 경험을 유지하도록 함)
 const FALLBACK_IDEAS_POOL = [
     { title: "MBTI가 바뀐 커플", plot: "극단적인 T 남자친구와 극단적인 F 여자친구의 MBTI가 하루아침에 뒤바뀌었다. 감성적인 남친과 냉철한 여친의 대혼란 데이트." },
@@ -227,7 +235,9 @@ export const generateCharacterImage = async (visual: string, style: string): Pro
             config: {
                 imageConfig: {
                     aspectRatio: "1:1",
-                }
+                },
+                // Add safety settings to reduce blocked responses
+                safetySettings: SAFETY_SETTINGS,
             }
         });
         
@@ -236,7 +246,7 @@ export const generateCharacterImage = async (visual: string, style: string): Pro
                 return `data:image/png;base64,${part.inlineData.data}`;
             }
         }
-        throw new Error("이미지 데이터가 없습니다.");
+        throw new Error("이미지 데이터가 없습니다. (Safety Blocked?)");
     } catch (error) {
         console.error("Error generating character image:", error);
         return `https://picsum.photos/seed/${encodeURIComponent(visual)}/512/512`;
@@ -308,7 +318,9 @@ export const generatePanelImage = async (
             config: {
                 imageConfig: {
                     aspectRatio: panel.aspectRatio || "1:1",
-                }
+                },
+                // Add safety settings to reduce blocked responses
+                safetySettings: SAFETY_SETTINGS,
             }
         });
 
@@ -317,8 +329,9 @@ export const generatePanelImage = async (
                 return `data:image/png;base64,${part.inlineData.data}`;
             }
         }
-        throw new Error("이미지 데이터가 없습니다.");
+        throw new Error("이미지 데이터가 없습니다. (Safety Blocked?)");
     } catch (error) {
+        // 상세 에러 로그 출력 (Vercel 배포 환경 디버깅용)
         console.error("Error generating panel image:", error);
         return `https://picsum.photos/seed/panel-${panel.idx}/512/512`;
     }
