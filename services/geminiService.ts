@@ -27,8 +27,37 @@ const FALLBACK_IDEAS_POOL = [
     { title: "미래에서 온 배달", plot: "배달 앱 오류로 30년 후의 내가 시킨 음식이 도착했다. 영수증에는 '당뇨 조심해서 먹어라'는 메모가 적혀있다." },
 ];
 
+const getApiKey = (): string | null => {
+    // 1. Session Storage (Manual Entry)
+    if (typeof window !== 'undefined') {
+        const stored = sessionStorage.getItem(SESSION_STORAGE_KEY);
+        if (stored) return stored;
+    }
+
+    // 2. Environment Variables (Various Prefixes for Vercel/Vite/Next/CRA)
+    // process.env.API_KEY is preferred as per instructions, but fallbacks are needed for client-side builds.
+    if (typeof process !== 'undefined' && process.env) {
+        if (process.env.API_KEY) return process.env.API_KEY;
+        if (process.env.NEXT_PUBLIC_API_KEY) return process.env.NEXT_PUBLIC_API_KEY;
+        if (process.env.REACT_APP_API_KEY) return process.env.REACT_APP_API_KEY;
+    }
+
+    // 3. Vite Import Meta (Specific to Vite builds)
+    try {
+        // @ts-ignore
+        if (import.meta && import.meta.env && import.meta.env.VITE_API_KEY) {
+            // @ts-ignore
+            return import.meta.env.VITE_API_KEY;
+        }
+    } catch (e) {
+        // Ignore errors if import.meta is not available
+    }
+
+    return null;
+};
+
 export const hasApiKey = (): boolean => {
-    return !!sessionStorage.getItem(SESSION_STORAGE_KEY) || !!process.env.API_KEY;
+    return !!getApiKey();
 };
 
 export const saveApiKey = (key: string) => {
@@ -54,9 +83,9 @@ export const validateApiKey = async (key: string): Promise<boolean> => {
 }
 
 const getClient = () => {
-    const key = sessionStorage.getItem(SESSION_STORAGE_KEY) || process.env.API_KEY;
+    const key = getApiKey();
     if (!key) {
-        throw new Error("API Key가 설정되지 않았습니다.");
+        throw new Error("API Key가 설정되지 않았습니다. 설정 메뉴에서 키를 입력하거나 환경 변수를 확인해주세요.");
     }
     return new GoogleGenAI({ apiKey: key });
 };
@@ -243,7 +272,6 @@ export const generateCharacterImage = async (visual: string, style: string): Pro
         throw new Error("이미지 데이터가 없습니다. (Safety Blocked?)");
     } catch (error) {
         console.error("Error generating character image:", error);
-        // Fallback 제거: 랜덤 이미지가 아닌 에러를 발생시켜 API 키 문제를 인지하게 함
         throw error;
     }
 };
@@ -325,7 +353,6 @@ export const generatePanelImage = async (
         throw new Error("이미지 데이터가 없습니다. (Safety Blocked?)");
     } catch (error) {
         console.error("Error generating panel image:", error);
-        // Fallback 제거: 명시적 에러 전달
         throw error;
     }
 };
