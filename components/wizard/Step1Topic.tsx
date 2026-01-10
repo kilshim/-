@@ -8,10 +8,15 @@ import Button from '../ui/Button';
 import Card from '../ui/Card';
 import { WandIcon } from '../Icons';
 
+interface Idea {
+    title: string;
+    plot: string;
+}
+
 const Step1Topic: React.FC = () => {
   const { project, updateProject, setStep } = useProjectContext();
   const [topic, setTopic] = useState('');
-  const [ideas, setIdeas] = useState<string[]>([]);
+  const [ideas, setIdeas] = useState<Idea[]>([]);
   const [isGeneratingIdeas, setIsGeneratingIdeas] = useState(false);
   const [isGeneratingScript, setIsGeneratingScript] = useState(false);
 
@@ -23,8 +28,8 @@ const Step1Topic: React.FC = () => {
     setIsGeneratingIdeas(false);
   };
 
-  const handleSelectIdea = (idea: string) => {
-    setTopic(idea);
+  const handleSelectIdea = (idea: Idea) => {
+    setTopic(`제목: ${idea.title}\n내용: ${idea.plot}`);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -32,7 +37,12 @@ const Step1Topic: React.FC = () => {
     if (!topic) return;
 
     setIsGeneratingScript(true);
-    updateProject({ title: topic });
+    // 제목 추출 (첫 줄에서 제목: 제거) 또는 전체 내용 사용
+    const titleMatch = topic.match(/^제목:\s*(.*)$/m);
+    const cleanTitle = titleMatch ? titleMatch[1] : topic.split('\n')[0].substring(0, 20);
+    
+    updateProject({ title: cleanTitle });
+    
     const scriptData = await generateScript(topic, project.genre, project.style);
     
     // Initialize project script structure
@@ -94,40 +104,42 @@ const Step1Topic: React.FC = () => {
           <label htmlFor="topic" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">주제</label>
           <textarea
             id="topic"
-            rows={3}
+            rows={4}
             value={topic}
             onChange={(e) => setTopic(e.target.value)}
-            className="w-full bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-purple-500 focus:border-purple-500 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500"
+            className="w-full bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-purple-500 focus:border-purple-500 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 resize-none"
             placeholder="예: 고양이가 갑자기 말을 하기 시작했다"
           />
         </div>
 
         <div className="space-y-4">
-          <Button type="button" variant="secondary" onClick={handleGenerateIdeas} isLoading={isGeneratingIdeas} icon={<WandIcon className="w-4 h-4" />}>
-            AI로 아이디어 추천받기
-          </Button>
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">아이디어가 필요하신가요?</h3>
+            <Button type="button" variant="secondary" size="sm" onClick={handleGenerateIdeas} isLoading={isGeneratingIdeas} icon={<WandIcon className="w-3 h-3" />}>
+                AI 추천받기
+            </Button>
+          </div>
+          
           {(ideas.length > 0) && (
-            <Card className="animate-in fade-in slide-in-from-top-2 duration-300">
-              <h3 className="text-lg font-semibold mb-2">추천 아이디어</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 gap-3 animate-in fade-in slide-in-from-top-2 duration-300">
                 {ideas.map((idea, index) => (
                   <button
                     key={index}
                     type="button"
                     onClick={() => handleSelectIdea(idea)}
-                    className="text-left p-3 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-600 rounded-md transition-colors text-sm"
+                    className="text-left p-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-purple-500 dark:hover:border-purple-500 hover:shadow-md rounded-lg transition-all group"
                   >
-                    {idea}
+                    <div className="font-bold text-gray-900 dark:text-white mb-1 group-hover:text-purple-600 dark:group-hover:text-purple-400">{idea.title}</div>
+                    <div className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2">{idea.plot}</div>
                   </button>
                 ))}
-              </div>
-            </Card>
+            </div>
           )}
         </div>
         
-        <div className="text-right">
+        <div className="text-right pt-4 border-t border-gray-100 dark:border-gray-700">
           <Button type="submit" isLoading={isGeneratingScript} disabled={!topic}>
-            대본 생성하기
+            대본 생성하기 &rarr;
           </Button>
         </div>
       </form>

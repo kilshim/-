@@ -7,46 +7,16 @@ const SESSION_STORAGE_KEY = 'CUSTOM_GEMINI_API_KEY';
 
 // API 오류 시 사용할 대기 아이디어 풀 (API 호출 실패 시에도 사용자가 경험을 유지하도록 함)
 const FALLBACK_IDEAS_POOL = [
-    "MBTI가 반대로 바뀐 커플의 하루",
-    "회사 탕비실 냉장고에 사는 요정와의 협상",
-    "고양이 번역기를 썼더니 내 고양이가 꼰대였다",
-    "모든 거짓말이 현실이 되는 10분의 시간",
-    "다이어트 실패를 합리화하는 101가지 방법",
-    "전 여자친구가 직장 상사로, 현 여자친구가 부하직원으로",
-    "지하철 옆자리 사람이 외계인이라는 확실한 증거",
-    "로또 1등 당첨된 걸 숨겨야 하는 신입사원",
-    "헬스장 고인물 할아버지 vs 신입 PT 쌤",
-    "배달 음식을 시켰는데 미래의 내가 배달왔다",
-    "스마트폰 중독 치료 모임에 간 스마트폰들",
-    "소개팅에 나갔는데 상대방이 내 흑역사를 다 알고 있다",
-    "집주인이 월세를 안 받는 대신 매일 개그를 요구한다",
-    "편의점 알바생이 알고보니 재벌 3세 회장님",
-    "중고거래 하러 나갔는데 상대가 전여친",
-    "엘리베이터에 갇혔는데 방귀 뀐 범인을 찾아야 한다",
-    "면접장에서 사장님 가발이 날아갔을 때의 대처법",
-    "우리 집 강아지가 밤마다 이족보행을 연습한다",
-    "무인도에 떨어졌는데 가져온 게 회사 노트북뿐",
-    "조별과제 하는데 조원들이 어벤져스 빌런들이다",
-    "엄마 몰래 산 게임기를 들키지 않기 위한 첩보 작전",
-    "짝사랑하는 사람 앞에서 콧물 풍선을 불었다",
-    "성형외과 의사가 내 얼굴을 보더니 환불해줬다",
-    "좀비 사태가 터졌는데 헬스장에 갇혀서 근손실 걱정 중",
-    "타임머신을 타고 과거로 갔는데 로또 번호를 까먹었다",
-    "내가 키우던 다육이가 말을 걸기 시작했다",
-    "출근길 지하철이 판타지 세계로 연결되었다",
-    "하루아침에 인기 아이돌이 된 음치",
-    "편의점 폐기 도시락 쟁탈전",
-    "독서실 옆자리 사람이 수상하다",
-    "머리가 벗겨졌는데 초능력이 생겼다",
-    "알바 면접을 봤는데 사장님이 우리 아빠",
-    "헤어진 연인이 같은 엘리베이터에 탔다",
-    "맛집 줄 서다가 만난 운명의 상대",
-    "동물원 사육사가 동물을 무서워함",
-    "헬스장 거울 속의 내가 뚱뚱해 보인다",
-    "꿈속에서 로또 번호를 봤는데 기억이 안 난다",
-    "소개팅 상대가 사실은 구미호",
-    "직장 상사가 내 덕질 계정을 팔로우했다",
-    "반려견이 내 일기장을 읽고 있다"
+    { title: "MBTI가 바뀐 커플", plot: "극단적인 T 남자친구와 극단적인 F 여자친구의 MBTI가 하루아침에 뒤바뀌었다. 감성적인 남친과 냉철한 여친의 대혼란 데이트." },
+    { title: "냉장고 요정와의 협상", plot: "자취생의 냉장고에 요정이 산다. 유통기한이 지난 음식을 먹으려 할 때마다 요정이 나타나 잔소리를 하며 음식을 뺏어간다." },
+    { title: "꼰대 고양이", plot: "최신 고양이 번역기를 샀다. 기대하며 켰는데, 우리 집 고양이가 나보다 더한 꼰대 마인드로 집안일 훈수를 두기 시작한다." },
+    { title: "거짓말이 현실로", plot: "딱 10분 동안 내가 하는 모든 빈말이 현실이 된다. '밥 한번 먹자'고 했다가 전국민과 식사를 하게 생겼다." },
+    { title: "다이어트의 신", plot: "다이어트를 결심한 주인공. 하지만 세상의 모든 음식이 말을 걸며 유혹하기 시작한다. 치킨이 내 이름을 부른다." },
+    { title: "전여친이 직장 상사", plot: "새로 이직한 꿈의 직장. 팀장님이 하필이면 최악으로 헤어졌던 전 여자친구다. 그녀의 복수가 업무지시로 시작된다." },
+    { title: "지하철 외계인", plot: "매일 같은 칸에 타는 아저씨가 아무래도 외계인 같다. 오늘 그가 스마트폰이 아닌 오이를 귀에 대고 통화하는 걸 목격했다." },
+    { title: "로또 1등 신입사원", plot: "입사 첫날 로또 1등에 당첨됐다. 퇴사하고 싶지만 부모님의 자랑이라 회사는 다녀야 한다. 웃음을 참느라 안면근육이 떨린다." },
+    { title: "헬스장 고인물 할아버지", plot: "동네 헬스장에 나타난 90세 할아버지. 지팡이를 짚고 오셔서는 3대 500을 가볍게 치고 사라지신다." },
+    { title: "미래에서 온 배달", plot: "배달 앱 오류로 30년 후의 내가 시킨 음식이 도착했다. 영수증에는 '당뇨 조심해서 먹어라'는 메모가 적혀있다." },
 ];
 
 export const hasApiKey = (): boolean => {
@@ -100,7 +70,7 @@ const scriptSchema = {
         properties: {
           name: { type: Type.STRING, description: "캐릭터 이름" },
           summary: { type: Type.STRING, description: "캐릭터 성격이나 역할 요약" },
-          visual: { type: Type.STRING, description: "헤어스타일, 의상 컬러, 특징 등 외형을 매우 구체적으로 묘사 (이미지 생성용)" },
+          visual: { type: Type.STRING, description: "이미지 생성용 외형 묘사. (예: '빨간 후드티를 입은 갈색 머리 소년', '파란 넥타이를 맨 흰 고양이')" },
         },
         required: ["name", "summary", "visual"],
       },
@@ -111,8 +81,8 @@ const scriptSchema = {
         type: Type.OBJECT,
         properties: {
           idx: { type: Type.INTEGER, description: "컷 번호 (1-4)" },
-          scene: { type: Type.STRING, description: "배경과 조명, 분위기 묘사" },
-          action: { type: Type.STRING, description: "캐릭터의 행동과 표정" },
+          scene: { type: Type.STRING, description: "배경과 조명, 전체적인 분위기" },
+          action: { type: Type.STRING, description: "캐릭터의 구체적인 행동, 자세, 표정" },
           dialogue: {
             type: Type.ARRAY,
             items: {
@@ -139,26 +109,33 @@ const ideasSchema = {
   properties: {
     ideas: {
       type: Type.ARRAY,
-      items: { type: Type.STRING },
+      items: {
+        type: Type.OBJECT,
+        properties: {
+            title: { type: Type.STRING, description: "아이디어의 흥미로운 제목" },
+            plot: { type: Type.STRING, description: "2-3문장으로 구성된 구체적인 줄거리 및 반전 요소" }
+        },
+        required: ["title", "plot"]
+      },
     },
   },
   required: ["ideas"],
 };
 
-export const generateIdeas = async (genre: string): Promise<string[]> => {
+export const generateIdeas = async (genre: string): Promise<{title: string, plot: string}[]> => {
   try {
     const ai = getClient();
     
-    // 프롬프트 강화: 더 창의적이고 구체적인 아이디어를 요구
+    // 프롬프트 강화: 단순 소재 나열이 아닌 구체적인 플롯 요구
     const prompt = `
-      당신은 센스 있는 웹툰 PD입니다. 
-      "${genre}" 장르로 2030 독자들이 좋아할 만한 신선하고 재미있는 4컷 만화 소재 5가지를 추천해주세요.
+      당신은 웹툰 플랫폼의 메인 PD입니다.
+      "${genre}" 장르로 독자들의 이목을 끌 수 있는 4컷 만화 아이디어 4가지를 기획해주세요.
       
       [필수 조건]
-      1. 진부한 클리셰를 비틀거나, 의외의 상황을 설정하세요.
-      2. "봇" 같지 않게, 사람이 쓴 것처럼 자연스럽고 구체적인 문장으로 작성하세요.
-      3. 각 아이디어는 독립적이고 흥미로워야 합니다.
-      4. 한국어로 작성하세요.
+      1. 각 아이디어는 '제목'과 '플롯(줄거리)'으로 구성해주세요.
+      2. 플롯은 2~3문장으로 작성하되, 기승전결이 느껴지거나 반전 포인트가 포함되어야 합니다.
+      3. 뻔한 내용보다는 2030 세대가 공감할 수 있는 현실적인 디테일이나 엉뚱한 상상력을 더해주세요.
+      4. 한국어로 자연스럽게 작성하세요.
     `;
 
     const response = await ai.models.generateContent({
@@ -167,15 +144,11 @@ export const generateIdeas = async (genre: string): Promise<string[]> => {
       config: {
         responseMimeType: "application/json",
         responseSchema: ideasSchema,
-        // 창의성을 높이기 위해 temperature 상향 조정
         temperature: 1.1,
-        topK: 40,
-        topP: 0.95,
       }
     });
     
     const text = response.text || "{}";
-    // Markdown formatting 제거 후 파싱
     const result = JSON.parse(cleanJsonString(text));
     
     if (!result.ideas || result.ideas.length === 0) throw new Error("No ideas generated");
@@ -183,10 +156,8 @@ export const generateIdeas = async (genre: string): Promise<string[]> => {
 
   } catch (error) {
     console.warn("API Error or Key missing, using fallback ideas:", error);
-    
-    // Fallback: 풀에서 랜덤으로 5개 추출하여 매번 다른 결과 제공
     const shuffled = [...FALLBACK_IDEAS_POOL].sort(() => 0.5 - Math.random());
-    return shuffled.slice(0, 5);
+    return shuffled.slice(0, 4);
   }
 };
 
@@ -196,23 +167,23 @@ export const generateScript = async (topic: string, genre: string, style: string
     const response = await ai.models.generateContent({
       model: 'gemini-3-pro-preview',
       contents: `
-        역할: 인기 웹툰 스토리 작가
+        역할: 베스트 도전 만화 스토리 작가
         주제: "${topic}"
         장르: ${genre}
         스타일: ${style}
         
-        위 정보를 바탕으로 4컷 만화의 콘티(대본)를 작성해주세요.
+        위 주제를 바탕으로 4컷 만화의 콘티(대본)를 작성해주세요.
         
         [작성 가이드]
-        1. 기승전결 구조를 갖추되, 4번째 컷에서는 반드시 웃음 포인트나 반전, 혹은 깊은 여운을 주어야 합니다.
-        2. 대사는 스마트폰으로 보기에 좋도록 짧고 간결하게(컷당 2마디 이내) 작성하세요.
-        3. [중요] 캐릭터의 외형(visual)은 이미지 생성 AI가 정확히 그릴 수 있도록 구체적인 특징(머리색, 옷 스타일/색상, 안경 유무 등)을 상세히 묘사하세요.
-        4. 모든 텍스트는 한국어로 작성하세요.
+        1. **캐릭터 외형(visual)**: 이미지 생성 AI가 그릴 것이므로, 추상적인 묘사(예: 멋진, 예쁜) 대신 **시각적인 특징(예: 검은색 뿔테 안경, 파란색 후드티, 짧은 단발머리)**을 매우 구체적으로 작성하세요.
+        2. **구조**: 1-3컷은 빌드업, 4컷은 확실한 반전이나 웃음 포인트가 있어야 합니다.
+        3. **대사**: 컷당 2마디 이내로 짧고 임팩트 있게 작성하세요.
+        4. 한국어로 작성하세요.
       `,
       config: {
         responseMimeType: "application/json",
         responseSchema: scriptSchema,
-        temperature: 0.8,
+        temperature: 0.85,
       }
     });
     const jsonString = cleanJsonString(response.text);
@@ -220,14 +191,14 @@ export const generateScript = async (topic: string, genre: string, style: string
   } catch (error) {
     console.error("Error generating script:", error);
     return {
-      characters: [{ name: "지혜", summary: "평범한 직장인", visual: "검은색 단발머리, 흰색 블라우스에 검정 자켓을 입은 오피스룩" }, { name: "냥이", summary: "지혜의 반려묘", visual: "통통한 체형의 노란색 치즈태비 고양이" }],
+      characters: [{ name: "지혜", summary: "평범한 직장인", visual: "검은색 단발머리, 흰색 셔츠, 검은색 정장 바지" }, { name: "냥이", summary: "지혜의 반려묘", visual: "통통한 노란색 치즈태비 고양이" }],
       panels: [
-        { idx: 1, scene: "거실 소파", action: "지혜가 피곤한 표정으로 노트북을 하고 있고, 냥이가 옆에서 식빵을 굽고 있다.", dialogue: [{ by: "지혜", text: "오늘따라 일이 많네..." }], notes: "평화로운 저녁" },
-        { idx: 2, scene: "거실 소파", action: "냥이가 지혜의 노트북 키보드 위로 올라가 엉덩이를 들이민다.", dialogue: [{ by: "지혜", text: "어, 냥이야 비켜줄래?" }], notes: "약간의 방해" },
-        { idx: 3, scene: "노트북 화면 클로즈업", action: "냥이가 발로 키보드를 마구 밟아 화면에 알 수 없는 복잡한 코드가 입력되고 있다.", dialogue: [{ by: "냥이", text: "(골골송)" }], notes: "타자 소리 효과음" },
-        { idx: 4, scene: "거실 소파", action: "지혜가 입을 벌리고 놀란 표정으로 화면을 본다. 화면에는 'NASA 해킹 성공' 메시지가 떠 있다.", dialogue: [{ by: "지혜", text: "이...이걸 네가...?" }], notes: "황당하고 놀란 분위기" }
+        { idx: 1, scene: "거실 소파", action: "지혜가 피곤한 표정으로 소파에 누워있고, 냥이가 배 위에 앉아있다.", dialogue: [{ by: "지혜", text: "아... 내일 월요일 실화냐..." }], notes: "절망적인 분위기" },
+        { idx: 2, scene: "거실 소파", action: "냥이가 지혜의 얼굴을 앞발로 툭툭 친다.", dialogue: [{ by: "냥이", text: "야, 일어나. 밥 줘." }], notes: "무심한 표정" },
+        { idx: 3, scene: "거실", action: "지혜가 벌떡 일어나 사료를 붓는다.", dialogue: [{ by: "지혜", text: "네네, 드립니다요..." }], notes: "집사의 숙명" },
+        { idx: 4, scene: "거실 클로즈업", action: "냥이가 사료는 안 먹고 지혜의 출근 가방에 토를 하고 있다.", dialogue: [{ by: "지혜", text: "야!!!!" }], notes: "경악하는 표정" }
       ],
-      tone: "코믹, 반전"
+      tone: "코믹, 일상"
     };
   }
 };
@@ -235,21 +206,19 @@ export const generateScript = async (topic: string, genre: string, style: string
 export const generateCharacterImage = async (visual: string, style: string): Promise<string> => {
     try {
         const ai = getClient();
-        // Use the detailed prompt from STYLE_PRESETS if available, otherwise use the ID
         const stylePresetPrompt = STYLE_PRESETS.find(s => s.id === style)?.prompt || style;
         
+        // 프롬프트를 더 강력하고 단순하게 변경
         const prompt = `
-            Task: Generate a character sheet for a comic.
+            Design a character sheet.
             Art Style: ${stylePresetPrompt}
+            Character Details: ${visual}
             
-            Character Visual Description: ${visual}
-            
-            Requirements:
-            - Front view, upper body portrait.
-            - Neutral expression.
-            - Simple solid background (e.g., white or light grey).
-            - High quality, sharp details.
-            - NO text, NO speech bubbles, NO panel borders.
+            Key Requirements:
+            1. **Front View Portrait**: Upper body or full body shot facing forward.
+            2. **Solid Background**: Use a simple white or light grey background. No complex scenery.
+            3. **Consistency**: Clear lines and distinct features suitable for a comic character.
+            4. **No Text**: Do not include any text, names, or color palettes in the image.
         `;
 
         const response = await ai.models.generateContent({
@@ -275,7 +244,6 @@ export const generateCharacterImage = async (visual: string, style: string): Pro
 };
 
 const dataUrlToGeminiPart = (dataUrl: string) => {
-    // Regex handles newlines in base64 and various image types robustly
     const match = dataUrl.match(/^data:(image\/[a-zA-Z+.-]+);base64,([\s\S]+)$/);
     if (!match) throw new Error("Invalid data URL");
     return {
@@ -297,49 +265,41 @@ export const generatePanelImage = async (
         
         const parts: any[] = [];
         
-        // 1. Define the task and style clearly
-        parts.push({ text: `
-            [Task]
-            Generate a single comic panel illustration.
-            
-            [Art Style]
-            ${stylePresetPrompt}
-        `});
+        // 1. Context & Style (First)
+        parts.push({ text: `Create a comic panel illustration in the style of: ${stylePresetPrompt}` });
 
-        // 2. Provide Character References (Images + Description)
+        // 2. Character References (Middle - Providing context)
         const relevantCharacters = characterReferences.filter(c => 
             panel.action.includes(c.name) || panel.scene.includes(c.name) || panel.dialogue.some(d => d.by === c.name)
         );
 
         if (relevantCharacters.length > 0) {
-            parts.push({ text: `[Character References]\nUse these characters as visual references:` });
-            
+            parts.push({ text: `[Characters in Scene]` });
             relevantCharacters.forEach(charRef => {
-                // Add text description to reinforce the image
-                parts.push({ text: `Character Name: ${charRef.name}\nVisual Description: ${charRef.visual}` });
-                
+                // Combine text description with image for better adherence
+                parts.push({ text: `Character: ${charRef.name} (${charRef.visual})` });
                 if (charRef.image.startsWith('data:')) {
                     try {
                         parts.push(dataUrlToGeminiPart(charRef.image));
-                    } catch (e) {
-                        console.warn(`Skipping invalid reference image for ${charRef.name}`);
-                    }
+                    } catch (e) { console.warn(`Skipping invalid ref image for ${charRef.name}`); }
                 }
             });
         }
 
-        // 3. Define the Scene and Constraints
+        // 3. Scene & Action (Last - The "Master Prompt" for what to draw NOW)
+        // Placing the specific instruction last often helps the model focus on the immediate task.
         parts.push({ text: `
-            [Scene Content]
-            Background/Setting: ${panel.scene}
-            Action/Event: ${panel.action}
+            [IMAGE GENERATION TASK]
+            Draw a single panel based on this description:
             
-            [Constraints]
-            - Create a full-bleed illustration (no white borders/frames).
-            - DO NOT include speech bubbles.
-            - DO NOT include text inside the artwork.
-            - Maintain the specified art style.
-            - High resolution, detailed.
+            SCENE/BACKGROUND: ${panel.scene}
+            ACTION/POSE: ${panel.action}
+            
+            [STRICT RULES]
+            - Use the Art Style defined above.
+            - Draw the characters to match the reference images and descriptions provided.
+            - NO SPEECH BUBBLES. NO TEXT.
+            - Full color, high quality illustration.
         ` });
 
         const response = await ai.models.generateContent({
@@ -378,7 +338,6 @@ export const generateInstagramPost = async (topic: string, tone: string): Promis
             `,
             config: {
                 responseMimeType: "application/json",
-                // 인스타그램 포스팅은 약간의 변주가 필요하므로 온도 높임
                 temperature: 0.8,
             }
         });
