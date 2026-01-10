@@ -5,6 +5,50 @@ import { STYLE_PRESETS } from '../constants';
 
 const SESSION_STORAGE_KEY = 'CUSTOM_GEMINI_API_KEY';
 
+// API 오류 시 사용할 대기 아이디어 풀 (API 호출 실패 시에도 사용자가 경험을 유지하도록 함)
+const FALLBACK_IDEAS_POOL = [
+    "MBTI가 반대로 바뀐 커플의 하루",
+    "회사 탕비실 냉장고에 사는 요정와의 협상",
+    "고양이 번역기를 썼더니 내 고양이가 꼰대였다",
+    "모든 거짓말이 현실이 되는 10분의 시간",
+    "다이어트 실패를 합리화하는 101가지 방법",
+    "전 여자친구가 직장 상사로, 현 여자친구가 부하직원으로",
+    "지하철 옆자리 사람이 외계인이라는 확실한 증거",
+    "로또 1등 당첨된 걸 숨겨야 하는 신입사원",
+    "헬스장 고인물 할아버지 vs 신입 PT 쌤",
+    "배달 음식을 시켰는데 미래의 내가 배달왔다",
+    "스마트폰 중독 치료 모임에 간 스마트폰들",
+    "소개팅에 나갔는데 상대방이 내 흑역사를 다 알고 있다",
+    "집주인이 월세를 안 받는 대신 매일 개그를 요구한다",
+    "편의점 알바생이 알고보니 재벌 3세 회장님",
+    "중고거래 하러 나갔는데 상대가 전여친",
+    "엘리베이터에 갇혔는데 방귀 뀐 범인을 찾아야 한다",
+    "면접장에서 사장님 가발이 날아갔을 때의 대처법",
+    "우리 집 강아지가 밤마다 이족보행을 연습한다",
+    "무인도에 떨어졌는데 가져온 게 회사 노트북뿐",
+    "조별과제 하는데 조원들이 어벤져스 빌런들이다",
+    "엄마 몰래 산 게임기를 들키지 않기 위한 첩보 작전",
+    "짝사랑하는 사람 앞에서 콧물 풍선을 불었다",
+    "성형외과 의사가 내 얼굴을 보더니 환불해줬다",
+    "좀비 사태가 터졌는데 헬스장에 갇혀서 근손실 걱정 중",
+    "타임머신을 타고 과거로 갔는데 로또 번호를 까먹었다",
+    "내가 키우던 다육이가 말을 걸기 시작했다",
+    "출근길 지하철이 판타지 세계로 연결되었다",
+    "하루아침에 인기 아이돌이 된 음치",
+    "편의점 폐기 도시락 쟁탈전",
+    "독서실 옆자리 사람이 수상하다",
+    "머리가 벗겨졌는데 초능력이 생겼다",
+    "알바 면접을 봤는데 사장님이 우리 아빠",
+    "헤어진 연인이 같은 엘리베이터에 탔다",
+    "맛집 줄 서다가 만난 운명의 상대",
+    "동물원 사육사가 동물을 무서워함",
+    "헬스장 거울 속의 내가 뚱뚱해 보인다",
+    "꿈속에서 로또 번호를 봤는데 기억이 안 난다",
+    "소개팅 상대가 사실은 구미호",
+    "직장 상사가 내 덕질 계정을 팔로우했다",
+    "반려견이 내 일기장을 읽고 있다"
+];
+
 export const hasApiKey = (): boolean => {
     return !!sessionStorage.getItem(SESSION_STORAGE_KEY) || !!process.env.API_KEY;
 };
@@ -35,9 +79,15 @@ const getClient = () => {
     // sessionStorage에 저장된 키가 있으면 우선 사용, 없으면 환경변수 사용
     const key = sessionStorage.getItem(SESSION_STORAGE_KEY) || process.env.API_KEY;
     if (!key) {
+        // 키가 없으면 에러를 던져서 catch 블록의 Fallback 로직을 타게 함
         throw new Error("API Key가 설정되지 않았습니다.");
     }
     return new GoogleGenAI({ apiKey: key });
+};
+
+// Markdown 코드 블록 등을 제거하여 순수 JSON 문자열만 추출하는 헬퍼 함수
+const cleanJsonString = (text: string): string => {
+    return text.replace(/```(?:json)?\n?/g, '').replace(/```/g, '').trim();
 };
 
 const scriptSchema = {
@@ -84,26 +134,59 @@ const scriptSchema = {
   required: ["characters", "panels", "tone"],
 };
 
+const ideasSchema = {
+  type: Type.OBJECT,
+  properties: {
+    ideas: {
+      type: Type.ARRAY,
+      items: { type: Type.STRING },
+    },
+  },
+  required: ["ideas"],
+};
+
 export const generateIdeas = async (genre: string): Promise<string[]> => {
   try {
     const ai = getClient();
+    
+    // 프롬프트 강화: 더 창의적이고 구체적인 아이디어를 요구
+    const prompt = `
+      당신은 센스 있는 웹툰 PD입니다. 
+      "${genre}" 장르로 2030 독자들이 좋아할 만한 신선하고 재미있는 4컷 만화 소재 5가지를 추천해주세요.
+      
+      [필수 조건]
+      1. 진부한 클리셰를 비틀거나, 의외의 상황을 설정하세요.
+      2. "봇" 같지 않게, 사람이 쓴 것처럼 자연스럽고 구체적인 문장으로 작성하세요.
+      3. 각 아이디어는 독립적이고 흥미로워야 합니다.
+      4. 한국어로 작성하세요.
+    `;
+
     const response = await ai.models.generateContent({
       model: 'gemini-3-pro-preview',
-      contents: `4컷 만화에 사용할 ${genre} 장르의 참신하고 재미있는 주제 5개를 제안해줘. 일상적인 공감대나 예상치 못한 반전이 있는 아이디어가 좋아. **반드시 모든 내용은 한국어로 작성해줘.** JSON 형식으로만 응답해줘. 예: {"ideas": ["주제1", "주제2", ...]}.`,
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: ideasSchema,
+        // 창의성을 높이기 위해 temperature 상향 조정
+        temperature: 1.1,
+        topK: 40,
+        topP: 0.95,
+      }
     });
-    const jsonString = response.text.replace(/```json|```/g, '').trim();
-    const result = JSON.parse(jsonString);
+    
+    const text = response.text || "{}";
+    // Markdown formatting 제거 후 파싱
+    const result = JSON.parse(cleanJsonString(text));
+    
+    if (!result.ideas || result.ideas.length === 0) throw new Error("No ideas generated");
     return result.ideas;
+
   } catch (error) {
-    console.error("Error generating ideas:", error);
-    // Fallback ideas in Korean (API 오류 시 한국어로 출력)
-    return [
-        "파업을 선언한 최첨단 AI 칫솔",
-        "알고 보니 내 고양이가 SNS 스타였다",
-        "감자튀김 하나를 두고 벌이는 비둘기들의 결투",
-        "세계 정복을 꿈꾸는 베란다의 선인장",
-        "겁쟁이 유령의 험난한 폐가 적응기"
-    ];
+    console.warn("API Error or Key missing, using fallback ideas:", error);
+    
+    // Fallback: 풀에서 랜덤으로 5개 추출하여 매번 다른 결과 제공
+    const shuffled = [...FALLBACK_IDEAS_POOL].sort(() => 0.5 - Math.random());
+    return shuffled.slice(0, 5);
   }
 };
 
@@ -112,13 +195,27 @@ export const generateScript = async (topic: string, genre: string, style: string
     const ai = getClient();
     const response = await ai.models.generateContent({
       model: 'gemini-3-pro-preview',
-      contents: `주제: "${topic}", 장르: ${genre}, 스타일: ${style}를 바탕으로 4컷 만화 대본을 생성해줘. 컷 1은 도입, 컷 4는 반전이나 여운이 있어야 해. 대사는 컷당 1~2개를 넘지 않게 간결하게 작성해줘. **모든 내용은 한국어로 작성해야 해.**`,
+      contents: `
+        역할: 인기 웹툰 스토리 작가
+        주제: "${topic}"
+        장르: ${genre}
+        스타일: ${style}
+        
+        위 정보를 바탕으로 4컷 만화의 콘티(대본)를 작성해주세요.
+        
+        [작성 가이드]
+        1. 기승전결 구조를 갖추되, 4번째 컷에서는 반드시 웃음 포인트나 반전, 혹은 깊은 여운을 주어야 합니다.
+        2. 대사는 스마트폰으로 보기에 좋도록 짧고 간결하게(컷당 2마디 이내) 작성하세요.
+        3. 캐릭터의 외형(visual)은 이미지 생성 AI가 이해하기 쉽도록 구체적으로 묘사하세요 (예: 검은 뿔테 안경, 파란 후드티).
+        4. 모든 텍스트는 한국어로 작성하세요.
+      `,
       config: {
         responseMimeType: "application/json",
         responseSchema: scriptSchema,
+        temperature: 0.8,
       }
     });
-    const jsonString = response.text.trim();
+    const jsonString = cleanJsonString(response.text);
     return JSON.parse(jsonString) as Script;
   } catch (error) {
     console.error("Error generating script:", error);
@@ -139,15 +236,19 @@ export const generateCharacterImage = async (visual: string, style: string): Pro
     try {
         const ai = getClient();
         const stylePreset = STYLE_PRESETS.find(s => s.id === style)?.name || style;
-        const prompt = `4컷 만화 캐릭터 시트 생성. 캐릭터 설명: ${visual}, 스타일: ${stylePreset}. 정면, 상반신, 중립적인 표정, 단색 배경. 글자 포함 금지.`;
+        const prompt = `Character sheet design for a 4-panel comic. 
+        Character description: ${visual}. 
+        Art Style: ${stylePreset}. 
+        Requirements: Front view, upper body portrait, neutral expression, simple solid color background. High quality, detailed. No text.`;
 
         const response = await ai.models.generateContent({
-            model: 'gemini-3-pro-image-preview',
+            // Downgrade to flash-image for better permission compatibility
+            model: 'gemini-2.5-flash-image', 
             contents: { parts: [{ text: prompt }] },
             config: {
                 imageConfig: {
                     aspectRatio: "1:1",
-                    imageSize: "1K"
+                    // imageSize is not supported in flash-image
                 }
             }
         });
@@ -165,7 +266,8 @@ export const generateCharacterImage = async (visual: string, style: string): Pro
 };
 
 const dataUrlToGeminiPart = (dataUrl: string) => {
-    const match = dataUrl.match(/^data:(image\/\w+);base64,(.*)$/);
+    // Regex now handles newlines in base64 and various image types more robustly
+    const match = dataUrl.match(/^data:(image\/[a-zA-Z+.-]+);base64,([\s\S]+)$/);
     if (!match) throw new Error("Invalid data URL");
     return {
         inlineData: {
@@ -183,26 +285,41 @@ export const generatePanelImage = async (
     try {
         const ai = getClient();
         const stylePresetPrompt = STYLE_PRESETS.find(s => s.id === style)?.prompt || 'A clean comic art style.';
-        const parts: any[] = [{ text: `만화 스타일: ${stylePresetPrompt}` }];
+        const parts: any[] = [{ text: `Art Style: ${stylePresetPrompt}` }];
 
         const relevantCharacters = characterReferences.filter(c => 
             panel.action.includes(c.name) || panel.scene.includes(c.name) || panel.dialogue.some(d => d.by === c.name)
         );
 
         relevantCharacters.forEach(charRef => {
-            parts.push({ text: `캐릭터 '${charRef.name}' 참고용 이미지:` });
-            parts.push(dataUrlToGeminiPart(charRef.image));
+            // Only use data URLs for reference images to avoid "Invalid data URL" errors
+            if (charRef.image.startsWith('data:')) {
+                parts.push({ text: `Reference Character '${charRef.name}':` });
+                try {
+                    parts.push(dataUrlToGeminiPart(charRef.image));
+                } catch (e) {
+                    console.warn(`Skipping invalid reference image for ${charRef.name}`);
+                }
+            } else {
+                // For non-data URLs (e.g. picsum fallbacks), just provide the text description
+                parts.push({ text: `Reference Character '${charRef.name}' visual description: ${charRef.visual}` });
+            }
         });
 
-        parts.push({ text: `생성할 내용: ${panel.scene}, ${panel.action}. 텍스트나 테두리 없이 꽉 찬 풀-블리드 이미지로 그려줘.` });
+        parts.push({ text: `
+            Scene Description: ${panel.scene}
+            Action: ${panel.action}
+            Requirements: Full-bleed panel illustration, no speech bubbles, no text, high quality. Matches the provided art style and character references.
+        ` });
 
         const response = await ai.models.generateContent({
-            model: 'gemini-3-pro-image-preview',
+            // Downgrade to flash-image for better permission compatibility
+            model: 'gemini-2.5-flash-image',
             contents: { parts },
             config: {
                 imageConfig: {
                     aspectRatio: panel.aspectRatio || "1:1",
-                    imageSize: "1K"
+                    // imageSize is not supported in flash-image
                 }
             }
         });
@@ -224,12 +341,23 @@ export const generateInstagramPost = async (topic: string, tone: string): Promis
         const ai = getClient();
         const response = await ai.models.generateContent({
             model: 'gemini-3-pro-preview',
-            contents: `주제 "${topic}", 톤 "${tone}" 기반 인스타그램 포스트 생성. **반드시 한국어로 작성해줘.** JSON 형식 응답: {"caption": "...", "hashtags": "..."}.`,
+            contents: `주제 "${topic}", 톤 "${tone}" 기반 인스타그램 포스트 텍스트를 작성해줘.
+            
+            [요구사항]
+            1. 캡션: 독자의 흥미를 유발하는 짧고 재치있는 문구 (이모지 포함).
+            2. 해시태그: 유입이 많은 인기 해시태그 10개 이상.
+            3. 반드시 한국어로 작성.
+            `,
+            config: {
+                responseMimeType: "application/json",
+                // 인스타그램 포스팅은 약간의 변주가 필요하므로 온도 높임
+                temperature: 0.8,
+            }
         });
-        const jsonString = response.text.replace(/```json|```/g, '').trim();
+        const jsonString = cleanJsonString(response.text);
         return JSON.parse(jsonString);
     } catch (error) {
         console.error("Error generating Instagram post:", error);
-        return { caption: "오늘의 만화!", hashtags: "#웹툰 #만화" };
+        return { caption: "오늘의 만화!", hashtags: "#웹툰 #만화 #인스타툰 #일상 #공감" };
     }
 };

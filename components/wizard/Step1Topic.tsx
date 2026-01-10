@@ -17,6 +17,7 @@ const Step1Topic: React.FC = () => {
 
   const handleGenerateIdeas = async () => {
     setIsGeneratingIdeas(true);
+    setIdeas([]); // Clear previous ideas to show loading state effectively
     const newIdeas = await generateIdeas(project.genre);
     setIdeas(newIdeas);
     setIsGeneratingIdeas(false);
@@ -105,8 +106,8 @@ const Step1Topic: React.FC = () => {
           <Button type="button" variant="secondary" onClick={handleGenerateIdeas} isLoading={isGeneratingIdeas} icon={<WandIcon className="w-4 h-4" />}>
             AI로 아이디어 추천받기
           </Button>
-          {ideas.length > 0 && (
-            <Card>
+          {(ideas.length > 0) && (
+            <Card className="animate-in fade-in slide-in-from-top-2 duration-300">
               <h3 className="text-lg font-semibold mb-2">추천 아이디어</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {ideas.map((idea, index) => (
