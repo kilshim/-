@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Button from '../ui/Button';
-import { saveApiKey, removeApiKey, hasApiKey } from '../../services/geminiService';
+import { saveApiKey, removeApiKey } from '../../services/geminiService';
 import { XCircleIcon, CheckCircleIcon } from '../Icons';
 
 interface SettingsModalProps {
@@ -27,7 +27,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
     saveApiKey(apiKey);
     setIsSaved(true);
     setApiKey('');
-    alert('API 키가 세션에 저장되었습니다.');
+    alert('API 키가 현재 세션에 저장되었습니다.');
   };
 
   const handleClear = () => {
@@ -51,9 +51,14 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
         </h2>
         
         <div className="space-y-4">
-          <p className="text-sm text-gray-600 dark:text-gray-400">
-            사용자의 API 키를 입력하세요. 이 키는 브라우저 종료 시까지 <code>sessionStorage</code>에만 임시로 유지됩니다.
-          </p>
+          <div className="bg-purple-50 dark:bg-purple-900/20 p-3 rounded-md border border-purple-100 dark:border-purple-800">
+             <h3 className="text-sm font-bold text-purple-700 dark:text-purple-300 mb-1">🔒 보안 안내</h3>
+             <ul className="text-xs text-purple-600 dark:text-purple-400 list-disc pl-4 space-y-1">
+                <li>입력하신 키는 <strong>브라우저 메모리(Session)</strong>에만 임시 저장됩니다.</li>
+                <li>이미지 생성 시 암호화된 채널을 통해 서버로 전송되며, <strong>서버에는 절대 저장되지 않습니다.</strong></li>
+                <li>창을 닫으면 키는 자동 소멸됩니다.</li>
+             </ul>
+          </div>
           
           <div className="space-y-2">
             <label htmlFor="apiKey" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -65,7 +70,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                 id="apiKey"
                 value={apiKey}
                 onChange={(e) => setApiKey(e.target.value)}
-                placeholder={isSaved ? "키가 이미 설정되어 있습니다" : "API Key를 입력하세요"}
+                placeholder={isSaved ? "키가 현재 세션에 활성화됨" : "AIza..."}
                 className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-purple-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
               />
               {isSaved && !apiKey && (
@@ -78,18 +83,18 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
 
           <div className="flex flex-col gap-2 pt-2">
             <Button onClick={handleSave} disabled={!apiKey.trim()} className="w-full">
-              저장하기
+              세션에 적용하기
             </Button>
             {isSaved && (
               <Button onClick={handleClear} variant="ghost" className="w-full text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20">
-                저장된 키 삭제
+                세션 키 삭제
               </Button>
             )}
           </div>
 
           <div className="text-center pt-2">
             <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="text-xs text-purple-500 hover:underline">
-                Google AI Studio에서 키 발급받기 &rarr;
+                Google AI Studio에서 무료 키 발급받기 &rarr;
             </a>
           </div>
         </div>

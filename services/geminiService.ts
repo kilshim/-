@@ -221,65 +221,60 @@ export const generateScript = async (topic: string, genre: string, style: string
   }
 };
 
-export const generateCharacterImage = async (visual: string, style: string): Promise<string> => {
-    try {
-        const ai = getClient();
-        const stylePresetPrompt = STYLE_PRESETS.find(s => s.id === style)?.prompt || style;
-        
-        // Simplified Prompt
-        const prompt = `
-            Draw a character design sheet.
-            Art Style: ${stylePresetPrompt}
-            Character Details: ${visual}
-            
-            Key Requirements:
-            1. **Front View Portrait**: Upper body shot.
-            2. **Solid Background**: White background.
-            3. **Consistency**: Clear lines suitable for a comic.
-            4. **No Text**: Do not include any text.
-        `;
+/**
+ * --- SECURE SERVER-SIDE IMAGE GENERATION ---
+ * The client no longer calls Gemini directly for images.
+ * It sends the Key via Headers to the Next.js API Route.
+ */
 
-        const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash-image', 
-            contents: { parts: [{ text: prompt }] },
-            config: {
-                imageConfig: { aspectRatio: "1:1" },
-                // removed manual safetySettings to avoid config mismatch errors. default is usually fine.
-            }
-        });
-        
-        const candidate = response.candidates?.[0];
-        if (!candidate) throw new Error("No response candidates");
-        
-        if (candidate.finishReason === 'SAFETY') {
-            throw new Error("Image blocked by safety filters.");
-        }
+const callImageApi = async (prompt: string, aspectRatio: string = "1:1") => {
+    const apiKey = getApiKey();
+    if (!apiKey) throw new Error("API Key is required");
 
-        for (const part of candidate.content.parts) {
-            if (part.inlineData) {
-                return `data:image/png;base64,${part.inlineData.data}`;
-            }
-        }
-        throw new Error("No image data returned.");
-    } catch (error: any) {
-        console.error("Error generating character image:", error);
-        // Clean up error message for UI
-        const msg = error.message || "Unknown Error";
-        if (msg.includes("429")) throw new Error("요청이 너무 많습니다. 잠시 후 다시 시도하세요.");
-        if (msg.includes("SAFETY")) throw new Error("안전 필터에 의해 차단되었습니다.");
-        throw error;
+    const response = await fetch('/api/generate-image', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            // Security: Pass key via Header, not Body. Server never logs this header.
+            'X-User-Gemini-Key': apiKey, 
+        },
+        body: JSON.stringify({
+            prompt,
+            aspectRatio,
+            model: 'gemini-2.5-flash-image' // Default model
+        })
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+        // Pass server-side error message to UI
+        throw new Error(data.error || `Server Error: ${response.status}`);
     }
+
+    if (!data.imageBase64) {
+        throw new Error("No image data returned from server");
+    }
+
+    return `data:${data.mimeType || 'image/png'};base64,${data.imageBase64}`;
 };
 
-const dataUrlToGeminiPart = (dataUrl: string) => {
-    const match = dataUrl.match(/^data:(image\/[a-zA-Z+.-]+);base64,([\s\S]+)$/);
-    if (!match) throw new Error("Invalid data URL");
-    return {
-        inlineData: {
-            mimeType: match[1],
-            data: match[2],
-        },
-    };
+export const generateCharacterImage = async (visual: string, style: string): Promise<string> => {
+    const stylePresetPrompt = STYLE_PRESETS.find(s => s.id === style)?.prompt || style;
+    
+    const prompt = `
+        Draw a character design sheet.
+        Art Style: ${stylePresetPrompt}
+        Character Details: ${visual}
+        
+        Key Requirements:
+        1. **Front View Portrait**: Upper body shot.
+        2. **Solid Background**: White background.
+        3. **Consistency**: Clear lines suitable for a comic.
+        4. **No Text**: Do not include any text.
+    `;
+
+    return await callImageApi(prompt, "1:1");
 };
 
 export const generatePanelImage = async (
@@ -287,69 +282,30 @@ export const generatePanelImage = async (
     characterReferences: { name: string; image: string; visual: string }[],
     style: string
 ): Promise<string> => {
-    try {
-        const ai = getClient();
-        const stylePresetPrompt = STYLE_PRESETS.find(s => s.id === style)?.prompt || 'A clean comic art style.';
-        
-        const parts: any[] = [];
-        
-        const relevantCharacters = characterReferences.filter(c => 
-            panel.action.includes(c.name) || panel.scene.includes(c.name) || panel.dialogue.some(d => d.by === c.name)
-        );
-
-        relevantCharacters.forEach(charRef => {
-            if (charRef.image.startsWith('data:')) {
-                try {
-                    parts.push(dataUrlToGeminiPart(charRef.image));
-                } catch (e) { console.warn(`Skipping invalid ref image for ${charRef.name}`); }
-            }
+    const stylePresetPrompt = STYLE_PRESETS.find(s => s.id === style)?.prompt || 'A clean comic art style.';
+    
+    // Note regarding Reference Images:
+    // The current Serverless MVP implementation sends text prompts.
+    // Full multi-modal reference image support via Serverless would require 
+    // sending large base64 payloads to the /api route, potentially hitting 4MB limits.
+    // For this security refactor, we rely on strong TEXT descriptions of the characters.
+    
+    let textPrompt = `[Style Definition]\n${stylePresetPrompt}\n\n`;
+    
+    if (characterReferences.length > 0) {
+        textPrompt += `[Character Descriptions]\n`;
+        characterReferences.forEach(c => {
+            textPrompt += `- ${c.name}: ${c.visual}\n`;
         });
-
-        let textPrompt = `[Style Definition]\n${stylePresetPrompt}\n\n`;
-        
-        if (relevantCharacters.length > 0) {
-            textPrompt += `[Character References]\n`;
-            relevantCharacters.forEach(c => {
-                textPrompt += `- ${c.name}: ${c.visual}\n`;
-            });
-            textPrompt += `(Use the attached reference images)\n\n`;
-        }
-
-        textPrompt += `[Scene Description]\n`;
-        textPrompt += `Location: ${panel.scene}\n`;
-        textPrompt += `Action: ${panel.action}\n\n`;
-        textPrompt += `Draw exactly the scene described above. High quality illustration. NO TEXT.`;
-
-        parts.push({ text: textPrompt });
-
-        const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash-image',
-            contents: { parts },
-            config: {
-                imageConfig: { aspectRatio: panel.aspectRatio || "1:1" },
-            }
-        });
-
-        const candidate = response.candidates?.[0];
-        if (!candidate) throw new Error("No response candidates");
-        
-        if (candidate.finishReason === 'SAFETY') {
-             throw new Error("Image blocked by safety filters.");
-        }
-
-        for (const part of candidate.content.parts) {
-            if (part.inlineData) {
-                return `data:image/png;base64,${part.inlineData.data}`;
-            }
-        }
-        throw new Error("No image data returned.");
-    } catch (error: any) {
-        console.error("Error generating panel image:", error);
-        const msg = error.message || "Unknown Error";
-        if (msg.includes("429")) throw new Error("요청이 너무 많습니다. 잠시 후 다시 시도하세요.");
-        if (msg.includes("SAFETY")) throw new Error("안전 필터에 의해 차단되었습니다.");
-        throw error;
+        textPrompt += `(Ensure characters match these descriptions)\n\n`;
     }
+
+    textPrompt += `[Scene Description]\n`;
+    textPrompt += `Location: ${panel.scene}\n`;
+    textPrompt += `Action: ${panel.action}\n\n`;
+    textPrompt += `Draw exactly the scene described above. High quality illustration. NO TEXT.`;
+
+    return await callImageApi(textPrompt, panel.aspectRatio || "1:1");
 };
 
 export const generateInstagramPost = async (topic: string, tone: string): Promise<{ caption: string, hashtags: string }> => {
