@@ -13,7 +13,7 @@ const SAFETY_SETTINGS = [
     { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_ONLY_HIGH' }
 ];
 
-// API 오류 시 사용할 대기 아이디어 풀 (API 호출 실패 시에도 사용자가 경험을 유지하도록 함)
+// API 오류 시 사용할 대기 아이디어 풀
 const FALLBACK_IDEAS_POOL = [
     { title: "MBTI가 바뀐 커플", plot: "극단적인 T 남자친구와 극단적인 F 여자친구의 MBTI가 하루아침에 뒤바뀌었다. 감성적인 남친과 냉철한 여친의 대혼란 데이트." },
     { title: "냉장고 요정와의 협상", plot: "자취생의 냉장고에 요정이 산다. 유통기한이 지난 음식을 먹으려 할 때마다 요정이 나타나 잔소리를 하며 음식을 뺏어간다." },
@@ -54,16 +54,13 @@ export const validateApiKey = async (key: string): Promise<boolean> => {
 }
 
 const getClient = () => {
-    // sessionStorage에 저장된 키가 있으면 우선 사용, 없으면 환경변수 사용
     const key = sessionStorage.getItem(SESSION_STORAGE_KEY) || process.env.API_KEY;
     if (!key) {
-        // 키가 없으면 에러를 던져서 catch 블록의 Fallback 로직을 타게 함
         throw new Error("API Key가 설정되지 않았습니다.");
     }
     return new GoogleGenAI({ apiKey: key });
 };
 
-// Markdown 코드 블록 등을 제거하여 순수 JSON 문자열만 추출하는 헬퍼 함수
 const cleanJsonString = (text: string): string => {
     return text.replace(/```(?:json)?\n?/g, '').replace(/```/g, '').trim();
 };
@@ -134,7 +131,6 @@ export const generateIdeas = async (genre: string): Promise<{title: string, plot
   try {
     const ai = getClient();
     
-    // 프롬프트 강화: 단순 소재 나열이 아닌 구체적인 플롯 요구
     const prompt = `
       당신은 웹툰 플랫폼의 메인 PD입니다.
       "${genre}" 장르로 독자들의 이목을 끌 수 있는 4컷 만화 아이디어 4가지를 기획해주세요.
@@ -216,7 +212,6 @@ export const generateCharacterImage = async (visual: string, style: string): Pro
         const ai = getClient();
         const stylePresetPrompt = STYLE_PRESETS.find(s => s.id === style)?.prompt || style;
         
-        // 프롬프트를 더 강력하고 단순하게 변경
         const prompt = `
             Design a character sheet.
             Art Style: ${stylePresetPrompt}
@@ -236,7 +231,6 @@ export const generateCharacterImage = async (visual: string, style: string): Pro
                 imageConfig: {
                     aspectRatio: "1:1",
                 },
-                // Add safety settings to reduce blocked responses
                 safetySettings: SAFETY_SETTINGS,
             }
         });
@@ -249,7 +243,8 @@ export const generateCharacterImage = async (visual: string, style: string): Pro
         throw new Error("이미지 데이터가 없습니다. (Safety Blocked?)");
     } catch (error) {
         console.error("Error generating character image:", error);
-        return `https://picsum.photos/seed/${encodeURIComponent(visual)}/512/512`;
+        // Fallback 제거: 랜덤 이미지가 아닌 에러를 발생시켜 API 키 문제를 인지하게 함
+        throw error;
     }
 };
 
@@ -275,42 +270,41 @@ export const generatePanelImage = async (
         
         const parts: any[] = [];
         
-        // 1. Context & Style (First)
-        parts.push({ text: `Create a comic panel illustration in the style of: ${stylePresetPrompt}` });
-
-        // 2. Character References (Middle - Providing context)
+        // 1. Reference Images (First!) - Model pays more attention to images at the start
         const relevantCharacters = characterReferences.filter(c => 
             panel.action.includes(c.name) || panel.scene.includes(c.name) || panel.dialogue.some(d => d.by === c.name)
         );
 
+        relevantCharacters.forEach(charRef => {
+            if (charRef.image.startsWith('data:')) {
+                try {
+                    parts.push(dataUrlToGeminiPart(charRef.image));
+                } catch (e) { console.warn(`Skipping invalid ref image for ${charRef.name}`); }
+            }
+        });
+
+        // 2. Constructed Text Prompt (Unified)
+        let textPrompt = `[Style Definition]\n${stylePresetPrompt}\n\n`;
+        
         if (relevantCharacters.length > 0) {
-            parts.push({ text: `[Characters in Scene]` });
-            relevantCharacters.forEach(charRef => {
-                // Combine text description with image for better adherence
-                parts.push({ text: `Character: ${charRef.name} (${charRef.visual})` });
-                if (charRef.image.startsWith('data:')) {
-                    try {
-                        parts.push(dataUrlToGeminiPart(charRef.image));
-                    } catch (e) { console.warn(`Skipping invalid ref image for ${charRef.name}`); }
-                }
+            textPrompt += `[Character References]\n`;
+            relevantCharacters.forEach(c => {
+                textPrompt += `- ${c.name}: ${c.visual}\n`;
             });
+            textPrompt += `(Use the attached reference images for these characters)\n\n`;
         }
 
-        // 3. Scene & Action (Last - The "Master Prompt" for what to draw NOW)
-        // Placing the specific instruction last often helps the model focus on the immediate task.
-        parts.push({ text: `
-            [IMAGE GENERATION TASK]
-            Draw a single panel based on this description:
-            
-            SCENE/BACKGROUND: ${panel.scene}
-            ACTION/POSE: ${panel.action}
-            
-            [STRICT RULES]
-            - Use the Art Style defined above.
-            - Draw the characters to match the reference images and descriptions provided.
-            - NO SPEECH BUBBLES. NO TEXT.
-            - Full color, high quality illustration.
-        ` });
+        textPrompt += `[Scene Description]\n`;
+        textPrompt += `Location/Background: ${panel.scene}\n`;
+        textPrompt += `Action/Pose: ${panel.action}\n\n`;
+        
+        textPrompt += `[Strict Generation Rules]\n`;
+        textPrompt += `1. Draw exactly the scene described above in the defined style.\n`;
+        textPrompt += `2. Maintain character consistency with the provided references.\n`;
+        textPrompt += `3. **NO TEXT**: Do not draw any speech bubbles, sound effects, or text.\n`;
+        textPrompt += `4. **Full Color**: High quality illustration.\n`;
+
+        parts.push({ text: textPrompt });
 
         const response = await ai.models.generateContent({
             model: 'gemini-2.5-flash-image',
@@ -319,7 +313,6 @@ export const generatePanelImage = async (
                 imageConfig: {
                     aspectRatio: panel.aspectRatio || "1:1",
                 },
-                // Add safety settings to reduce blocked responses
                 safetySettings: SAFETY_SETTINGS,
             }
         });
@@ -331,9 +324,9 @@ export const generatePanelImage = async (
         }
         throw new Error("이미지 데이터가 없습니다. (Safety Blocked?)");
     } catch (error) {
-        // 상세 에러 로그 출력 (Vercel 배포 환경 디버깅용)
         console.error("Error generating panel image:", error);
-        return `https://picsum.photos/seed/panel-${panel.idx}/512/512`;
+        // Fallback 제거: 명시적 에러 전달
+        throw error;
     }
 };
 

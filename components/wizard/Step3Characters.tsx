@@ -14,7 +14,7 @@ const CharacterCard: React.FC<{ character: Character; onUpdate: (id: string, upd
       <div className="w-40 h-40 bg-gray-100 dark:bg-gray-800 rounded-md flex items-center justify-center overflow-hidden">
         {character.isGenerating && <div className="animate-pulse text-gray-400 dark:text-gray-500">생성중...</div>}
         {!character.isGenerating && character.referenceImageUrl && <img src={character.referenceImageUrl} alt={`${character.name} reference`} className="w-full h-full object-cover" />}
-        {!character.isGenerating && !character.referenceImageUrl && <div className="text-gray-400 dark:text-gray-500">이미지 없음</div>}
+        {!character.isGenerating && !character.referenceImageUrl && <div className="text-gray-400 dark:text-gray-500 text-xs p-2 break-keep">이미지 생성 실패</div>}
       </div>
       <Button variant="ghost" size="sm" onClick={() => onRegenerate(character.id)} disabled={character.isGenerating} icon={<RefreshCwIcon className="w-4 h-4"/>}>
         다시 생성
@@ -48,7 +48,10 @@ const Step3Characters: React.FC = () => {
       handleCharacterUpdate(character.id, { referenceImageUrl: imageUrl, isGenerating: false });
     } catch (error) {
       console.error(`Failed to generate image for ${character.name}:`, error);
-      handleCharacterUpdate(character.id, { isGenerating: false }); // Ensure loading state is turned off on error
+      // alert는 최초 자동 생성 시에는 너무 거슬릴 수 있으므로, 재생성 버튼 클릭 시에만 뜨거나
+      // 혹은 전체 실패 시 상단에 표시하는 게 좋으나, MVP에서는 확실한 피드백을 위해 alert 사용
+      alert(`[오류] '${character.name}' 이미지 생성 실패.\nAPI 키가 올바른지 확인하거나 잠시 후 다시 시도해주세요.\n(설정 메뉴에서 키 재설정 가능)`);
+      handleCharacterUpdate(character.id, { isGenerating: false });
     }
   }, [project.style, handleCharacterUpdate]);
 
@@ -66,8 +69,6 @@ const Step3Characters: React.FC = () => {
             charsToGenerate.forEach(generateImageForCharacter);
         }
     }
-    // This effect now runs only once on mount to generate any missing character images.
-    // The original dependency array could cause an infinite render loop. This is much safer.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
