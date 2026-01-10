@@ -5,14 +5,6 @@ import { STYLE_PRESETS } from '../constants';
 
 const SESSION_STORAGE_KEY = 'CUSTOM_GEMINI_API_KEY';
 
-// Safety settings to prevent image generation blocking on standard comic content
-const SAFETY_SETTINGS = [
-    { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_ONLY_HIGH' },
-    { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_ONLY_HIGH' },
-    { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_ONLY_HIGH' },
-    { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_ONLY_HIGH' }
-];
-
 // API 오류 시 사용할 대기 아이디어 풀
 const FALLBACK_IDEAS_POOL = [
     { title: "MBTI가 바뀐 커플", plot: "극단적인 T 남자친구와 극단적인 F 여자친구의 MBTI가 하루아침에 뒤바뀌었다. 감성적인 남친과 냉철한 여친의 대혼란 데이트." },
@@ -35,7 +27,6 @@ const getApiKey = (): string | null => {
     }
 
     // 2. Environment Variables (Various Prefixes for Vercel/Vite/Next/CRA)
-    // process.env.API_KEY is preferred as per instructions, but fallbacks are needed for client-side builds.
     if (typeof process !== 'undefined' && process.env) {
         if (process.env.API_KEY) return process.env.API_KEY;
         if (process.env.NEXT_PUBLIC_API_KEY) return process.env.NEXT_PUBLIC_API_KEY;
@@ -49,9 +40,7 @@ const getApiKey = (): string | null => {
             // @ts-ignore
             return import.meta.env.VITE_API_KEY;
         }
-    } catch (e) {
-        // Ignore errors if import.meta is not available
-    }
+    } catch (e) {}
 
     return null;
 };
@@ -159,11 +148,9 @@ const ideasSchema = {
 export const generateIdeas = async (genre: string): Promise<{title: string, plot: string}[]> => {
   try {
     const ai = getClient();
-    
     const prompt = `
       당신은 웹툰 플랫폼의 메인 PD입니다.
       "${genre}" 장르로 독자들의 이목을 끌 수 있는 4컷 만화 아이디어 5가지를 기획해주세요.
-      
       [필수 조건]
       1. 각 아이디어는 '제목'과 '플롯(줄거리)'으로 구성해주세요.
       2. 플롯은 2~3문장으로 작성하되, 기승전결이 느껴지거나 반전 포인트가 포함되어야 합니다.
@@ -204,11 +191,9 @@ export const generateScript = async (topic: string, genre: string, style: string
         주제: "${topic}"
         장르: ${genre}
         스타일: ${style}
-        
         위 주제를 바탕으로 4컷 만화의 콘티(대본)를 작성해주세요.
-        
         [작성 가이드]
-        1. **캐릭터 외형(visual)**: 이미지 생성 AI가 그릴 것이므로, 추상적인 묘사(예: 멋진, 예쁜) 대신 **시각적인 특징(예: 검은색 뿔테 안경, 파란색 후드티, 짧은 단발머리)**을 매우 구체적으로 작성하세요.
+        1. **캐릭터 외형(visual)**: 이미지 생성 AI가 그릴 것이므로, 추상적인 묘사 대신 **시각적인 특징(예: 검은색 뿔테 안경, 파란색 후드티, 짧은 단발머리)**을 매우 구체적으로 작성하세요.
         2. **구조**: 1-3컷은 빌드업, 4컷은 확실한 반전이나 웃음 포인트가 있어야 합니다.
         3. **대사**: 컷당 2마디 이내로 짧고 임팩트 있게 작성하세요.
         4. 한국어로 작성하세요.
@@ -241,37 +226,47 @@ export const generateCharacterImage = async (visual: string, style: string): Pro
         const ai = getClient();
         const stylePresetPrompt = STYLE_PRESETS.find(s => s.id === style)?.prompt || style;
         
+        // Simplified Prompt
         const prompt = `
-            Design a character sheet.
+            Draw a character design sheet.
             Art Style: ${stylePresetPrompt}
             Character Details: ${visual}
             
             Key Requirements:
-            1. **Front View Portrait**: Upper body or full body shot facing forward.
-            2. **Solid Background**: Use a simple white or light grey background. No complex scenery.
-            3. **Consistency**: Clear lines and distinct features suitable for a comic character.
-            4. **No Text**: Do not include any text, names, or color palettes in the image.
+            1. **Front View Portrait**: Upper body shot.
+            2. **Solid Background**: White background.
+            3. **Consistency**: Clear lines suitable for a comic.
+            4. **No Text**: Do not include any text.
         `;
 
         const response = await ai.models.generateContent({
             model: 'gemini-2.5-flash-image', 
             contents: { parts: [{ text: prompt }] },
             config: {
-                imageConfig: {
-                    aspectRatio: "1:1",
-                },
-                safetySettings: SAFETY_SETTINGS,
+                imageConfig: { aspectRatio: "1:1" },
+                // removed manual safetySettings to avoid config mismatch errors. default is usually fine.
             }
         });
         
-        for (const part of response.candidates[0].content.parts) {
+        const candidate = response.candidates?.[0];
+        if (!candidate) throw new Error("No response candidates");
+        
+        if (candidate.finishReason === 'SAFETY') {
+            throw new Error("Image blocked by safety filters.");
+        }
+
+        for (const part of candidate.content.parts) {
             if (part.inlineData) {
                 return `data:image/png;base64,${part.inlineData.data}`;
             }
         }
-        throw new Error("이미지 데이터가 없습니다. (Safety Blocked?)");
-    } catch (error) {
+        throw new Error("No image data returned.");
+    } catch (error: any) {
         console.error("Error generating character image:", error);
+        // Clean up error message for UI
+        const msg = error.message || "Unknown Error";
+        if (msg.includes("429")) throw new Error("요청이 너무 많습니다. 잠시 후 다시 시도하세요.");
+        if (msg.includes("SAFETY")) throw new Error("안전 필터에 의해 차단되었습니다.");
         throw error;
     }
 };
@@ -298,7 +293,6 @@ export const generatePanelImage = async (
         
         const parts: any[] = [];
         
-        // 1. Reference Images (First!) - Model pays more attention to images at the start
         const relevantCharacters = characterReferences.filter(c => 
             panel.action.includes(c.name) || panel.scene.includes(c.name) || panel.dialogue.some(d => d.by === c.name)
         );
@@ -311,7 +305,6 @@ export const generatePanelImage = async (
             }
         });
 
-        // 2. Constructed Text Prompt (Unified)
         let textPrompt = `[Style Definition]\n${stylePresetPrompt}\n\n`;
         
         if (relevantCharacters.length > 0) {
@@ -319,18 +312,13 @@ export const generatePanelImage = async (
             relevantCharacters.forEach(c => {
                 textPrompt += `- ${c.name}: ${c.visual}\n`;
             });
-            textPrompt += `(Use the attached reference images for these characters)\n\n`;
+            textPrompt += `(Use the attached reference images)\n\n`;
         }
 
         textPrompt += `[Scene Description]\n`;
-        textPrompt += `Location/Background: ${panel.scene}\n`;
-        textPrompt += `Action/Pose: ${panel.action}\n\n`;
-        
-        textPrompt += `[Strict Generation Rules]\n`;
-        textPrompt += `1. Draw exactly the scene described above in the defined style.\n`;
-        textPrompt += `2. Maintain character consistency with the provided references.\n`;
-        textPrompt += `3. **NO TEXT**: Do not draw any speech bubbles, sound effects, or text.\n`;
-        textPrompt += `4. **Full Color**: High quality illustration.\n`;
+        textPrompt += `Location: ${panel.scene}\n`;
+        textPrompt += `Action: ${panel.action}\n\n`;
+        textPrompt += `Draw exactly the scene described above. High quality illustration. NO TEXT.`;
 
         parts.push({ text: textPrompt });
 
@@ -338,21 +326,28 @@ export const generatePanelImage = async (
             model: 'gemini-2.5-flash-image',
             contents: { parts },
             config: {
-                imageConfig: {
-                    aspectRatio: panel.aspectRatio || "1:1",
-                },
-                safetySettings: SAFETY_SETTINGS,
+                imageConfig: { aspectRatio: panel.aspectRatio || "1:1" },
             }
         });
 
-        for (const part of response.candidates[0].content.parts) {
+        const candidate = response.candidates?.[0];
+        if (!candidate) throw new Error("No response candidates");
+        
+        if (candidate.finishReason === 'SAFETY') {
+             throw new Error("Image blocked by safety filters.");
+        }
+
+        for (const part of candidate.content.parts) {
             if (part.inlineData) {
                 return `data:image/png;base64,${part.inlineData.data}`;
             }
         }
-        throw new Error("이미지 데이터가 없습니다. (Safety Blocked?)");
-    } catch (error) {
+        throw new Error("No image data returned.");
+    } catch (error: any) {
         console.error("Error generating panel image:", error);
+        const msg = error.message || "Unknown Error";
+        if (msg.includes("429")) throw new Error("요청이 너무 많습니다. 잠시 후 다시 시도하세요.");
+        if (msg.includes("SAFETY")) throw new Error("안전 필터에 의해 차단되었습니다.");
         throw error;
     }
 };
@@ -363,7 +358,6 @@ export const generateInstagramPost = async (topic: string, tone: string): Promis
         const response = await ai.models.generateContent({
             model: 'gemini-3-pro-preview',
             contents: `주제 "${topic}", 톤 "${tone}" 기반 인스타그램 포스트 텍스트를 작성해줘.
-            
             [요구사항]
             1. 캡션: 독자의 흥미를 유발하는 짧고 재치있는 문구 (이모지 포함).
             2. 해시태그: 유입이 많은 인기 해시태그 10개 이상.
