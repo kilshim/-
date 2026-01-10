@@ -133,7 +133,7 @@ export const generateIdeas = async (genre: string): Promise<{title: string, plot
     
     const prompt = `
       당신은 웹툰 플랫폼의 메인 PD입니다.
-      "${genre}" 장르로 독자들의 이목을 끌 수 있는 4컷 만화 아이디어 4가지를 기획해주세요.
+      "${genre}" 장르로 독자들의 이목을 끌 수 있는 4컷 만화 아이디어 5가지를 기획해주세요.
       
       [필수 조건]
       1. 각 아이디어는 '제목'과 '플롯(줄거리)'으로 구성해주세요.
@@ -161,7 +161,7 @@ export const generateIdeas = async (genre: string): Promise<{title: string, plot
   } catch (error) {
     console.warn("API Error or Key missing, using fallback ideas:", error);
     const shuffled = [...FALLBACK_IDEAS_POOL].sort(() => 0.5 - Math.random());
-    return shuffled.slice(0, 4);
+    return shuffled.slice(0, 5);
   }
 };
 

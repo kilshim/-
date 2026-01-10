@@ -113,12 +113,16 @@ const Step1Topic: React.FC = () => {
         </div>
 
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">아이디어가 필요하신가요?</h3>
-            <Button type="button" variant="secondary" size="sm" onClick={handleGenerateIdeas} isLoading={isGeneratingIdeas} icon={<WandIcon className="w-3 h-3" />}>
-                AI 추천받기
-            </Button>
-          </div>
+          <Button 
+            type="button" 
+            variant="secondary" 
+            className="w-full"
+            onClick={handleGenerateIdeas} 
+            isLoading={isGeneratingIdeas} 
+            icon={<WandIcon className="w-4 h-4" />}
+          >
+            AI로 추천 아이디어 받기
+          </Button>
           
           {(ideas.length > 0) && (
             <div className="grid grid-cols-1 gap-3 animate-in fade-in slide-in-from-top-2 duration-300">
